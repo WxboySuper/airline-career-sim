@@ -45,3 +45,13 @@ Pre-production. The design is being defined before implementation.
 - Postgres for game data and saves
 - Prisma for database access and migrations
 - Shared TypeScript simulation logic in `packages/game-core`
+
+## License
+
+This project is licensed under the GNU General Public License v3.0.
+
+See `LICENSE` for details.
+
+## Assets and Game Content
+
+The source code is licensed under GPL-3.0. Future original art, branding, music, writing, aircraft names, airline names, and other creative assets may use separate licensing terms.
