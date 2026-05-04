@@ -9,196 +9,272 @@ export type RelationshipIssue = {
   message: string;
 };
 
-const has = <T extends string>(values: ReadonlySet<T>, value: T) =>
-  values.has(value);
+/**
+ * Helper to check if a value exists in a set.
+ *
+ * @param values - The set of values to check against.
+ * @param value - The value to look for.
+ * @returns True if the value exists in the set.
+ */
+const has = <T extends string>(values: ReadonlySet<T>, value: T) => values.has(value);
 
-export const validateSaveGameRelationships = (
-  save: SaveGame,
-): RelationshipIssue[] => {
-  const issues: RelationshipIssue[] = [];
-  const airports = new Set(save.airports.map((airport) => airport.id));
-  const manufacturers = new Set(
-    save.aircraftManufacturers.map((manufacturer) => manufacturer.id),
-  );
-  const aircraftTypes = new Set(save.aircraftTypes.map((type) => type.id));
-  const aircraft = new Set(save.aircraft.map((item) => item.id));
-  const routes = new Set(save.routes.map((route) => route.id));
-  const schedules = new Set(save.schedules.map((schedule) => schedule.id));
-  const contracts = new Set(save.contracts.map((contract) => contract.id));
-  const objectives = new Set(save.objectives.map((objective) => objective.id));
-  const objectiveProgress = new Set(
-    save.objectiveProgress.map((progress) => progress.id),
-  );
-  const unlocks = new Set(save.featureUnlocks.map((unlock) => unlock.id));
+type ValidationContext = {
+  airports: ReadonlySet<string>;
+  manufacturers: ReadonlySet<string>;
+  aircraftTypes: ReadonlySet<string>;
+  aircraft: ReadonlySet<string>;
+  routes: ReadonlySet<string>;
+  schedules: ReadonlySet<string>;
+  contracts: ReadonlySet<string>;
+  objectives: ReadonlySet<string>;
+  objectiveProgress: ReadonlySet<string>;
+  unlocks: ReadonlySet<string>;
+};
 
-  if (!has(airports, save.airline.homeAirportId)) {
+/**
+ * Validates the relationships for the airline and its basic references.
+ *
+ * @param save - The save game to validate.
+ * @param ctx - The validation context containing lookup sets.
+ * @param issues - The list of issues to append to.
+ */
+const validateAirline = (save: SaveGame, ctx: ValidationContext, issues: RelationshipIssue[]) => {
+  if (!has(ctx.airports, save.airline.homeAirportId)) {
     issues.push({
       path: "airline.homeAirportId",
-      message: "Airline home airport must exist in save airports.",
+      message: "Airline home airport must exist in save airports."
     });
   }
 
-  if (save.trackedObjectiveId && !has(objectives, save.trackedObjectiveId)) {
+  if (save.trackedObjectiveId && !has(ctx.objectives, save.trackedObjectiveId)) {
     issues.push({
       path: "trackedObjectiveId",
-      message: "Tracked objective must exist in save objectives.",
+      message: "Tracked objective must exist in save objectives."
     });
   }
 
-  for (const id of save.airline.aircraftIds) {
-    if (!has(aircraft, id)) {
-      issues.push({
-        path: "airline.aircraftIds",
-        message: `Airline aircraft reference is missing: ${id}`,
-      });
+  const airlineLists: Array<{
+    ids: string[];
+    path: string;
+    set: ReadonlySet<string>;
+    label: string;
+  }> = [
+    {
+      ids: save.airline.aircraftIds,
+      path: "airline.aircraftIds",
+      set: ctx.aircraft,
+      label: "aircraft"
+    },
+    {
+      ids: save.airline.routeIds,
+      path: "airline.routeIds",
+      set: ctx.routes,
+      label: "route"
+    },
+    {
+      ids: save.airline.contractIds,
+      path: "airline.contractIds",
+      set: ctx.contracts,
+      label: "contract"
+    },
+    {
+      ids: save.airline.objectiveProgressIds,
+      path: "airline.objectiveProgressIds",
+      set: ctx.objectiveProgress,
+      label: "objective progress"
+    },
+    {
+      ids: save.airline.featureUnlocks,
+      path: "airline.featureUnlocks",
+      set: ctx.unlocks,
+      label: "unlock"
+    }
+  ];
+
+  for (const list of airlineLists) {
+    for (const id of list.ids) {
+      if (!has(list.set, id)) {
+        issues.push({
+          path: list.path,
+          message: `Airline ${list.label} reference is missing: ${id}`
+        });
+      }
     }
   }
+};
 
-  for (const id of save.airline.routeIds) {
-    if (!has(routes, id)) {
-      issues.push({
-        path: "airline.routeIds",
-        message: `Airline route reference is missing: ${id}`,
-      });
-    }
-  }
-
-  for (const id of save.airline.contractIds) {
-    if (!has(contracts, id)) {
-      issues.push({
-        path: "airline.contractIds",
-        message: `Airline contract reference is missing: ${id}`,
-      });
-    }
-  }
-
-  for (const id of save.airline.objectiveProgressIds) {
-    if (!has(objectiveProgress, id)) {
-      issues.push({
-        path: "airline.objectiveProgressIds",
-        message: `Airline objective progress reference is missing: ${id}`,
-      });
-    }
-  }
-
-  for (const id of save.airline.featureUnlocks) {
-    if (!has(unlocks, id)) {
-      issues.push({
-        path: "airline.featureUnlocks",
-        message: `Airline unlock reference is missing: ${id}`,
-      });
-    }
-  }
-
+/**
+ * Validates the relationships for aircraft types and aircraft instances.
+ *
+ * @param save - The save game to validate.
+ * @param ctx - The validation context containing lookup sets.
+ * @param issues - The list of issues to append to.
+ */
+const validateAircraftEntities = (
+  save: SaveGame,
+  ctx: ValidationContext,
+  issues: RelationshipIssue[]
+) => {
   for (const type of save.aircraftTypes) {
-    if (!has(manufacturers, type.manufacturerId)) {
+    if (!has(ctx.manufacturers, type.manufacturerId)) {
       issues.push({
         path: `aircraftTypes.${type.id}.manufacturerId`,
-        message: "Aircraft type manufacturer must exist.",
+        message: "Aircraft type manufacturer must exist."
       });
     }
   }
 
   for (const item of save.aircraft) {
-    if (!has(aircraftTypes, item.aircraftTypeId)) {
+    if (!has(ctx.aircraftTypes, item.aircraftTypeId)) {
       issues.push({
         path: `aircraft.${item.id}.aircraftTypeId`,
-        message: "Aircraft instance type must exist.",
+        message: "Aircraft instance type must exist."
       });
     }
-    if (!has(airports, item.assignedBase)) {
+    if (!has(ctx.airports, item.assignedBase)) {
       issues.push({
         path: `aircraft.${item.id}.assignedBase`,
-        message: "Aircraft assigned base must exist.",
+        message: "Aircraft assigned base must exist."
       });
     }
-    if (item.assignedScheduleId && !has(schedules, item.assignedScheduleId)) {
+    if (item.assignedScheduleId && !has(ctx.schedules, item.assignedScheduleId)) {
       issues.push({
         path: `aircraft.${item.id}.assignedScheduleId`,
-        message: "Aircraft assigned schedule must exist.",
+        message: "Aircraft assigned schedule must exist."
       });
     }
   }
+};
 
+/**
+ * Validates the relationships for routes, schedules, and individual flights.
+ *
+ * @param save - The save game to validate.
+ * @param ctx - The validation context containing lookup sets.
+ * @param issues - The list of issues to append to.
+ */
+const validateRoutesAndSchedules = (
+  save: SaveGame,
+  ctx: ValidationContext,
+  issues: RelationshipIssue[]
+) => {
   for (const route of save.routes) {
-    if (!has(airports, route.originAirportId)) {
+    if (!has(ctx.airports, route.originAirportId)) {
       issues.push({
         path: `routes.${route.id}.originAirportId`,
-        message: "Route origin airport must exist.",
+        message: "Route origin airport must exist."
       });
     }
-    if (!has(airports, route.destinationAirportId)) {
+    if (!has(ctx.airports, route.destinationAirportId)) {
       issues.push({
         path: `routes.${route.id}.destinationAirportId`,
-        message: "Route destination airport must exist.",
+        message: "Route destination airport must exist."
       });
     }
     for (const id of route.assignedScheduleIds) {
-      if (!has(schedules, id)) {
+      if (!has(ctx.schedules, id)) {
         issues.push({
           path: `routes.${route.id}.assignedScheduleIds`,
-          message: `Route schedule reference is missing: ${id}`,
+          message: `Route schedule reference is missing: ${id}`
         });
       }
     }
   }
 
   for (const schedule of save.schedules) {
-    if (!has(aircraft, schedule.aircraftInstanceId)) {
+    if (!has(ctx.aircraft, schedule.aircraftInstanceId)) {
       issues.push({
         path: `schedules.${schedule.id}.aircraftInstanceId`,
-        message: "Schedule aircraft must exist.",
+        message: "Schedule aircraft must exist."
       });
     }
-    if (!has(airports, schedule.baseAirportId)) {
+    if (!has(ctx.airports, schedule.baseAirportId)) {
       issues.push({
         path: `schedules.${schedule.id}.baseAirportId`,
-        message: "Schedule base airport must exist.",
+        message: "Schedule base airport must exist."
       });
     }
     for (const flight of schedule.flights) {
-      if (!has(routes, flight.routeId)) {
+      if (!has(ctx.routes, flight.routeId)) {
         issues.push({
           path: `schedules.${schedule.id}.flights.${flight.id}.routeId`,
-          message: "Scheduled flight route must exist.",
+          message: "Scheduled flight route must exist."
         });
       }
-      if (!has(aircraft, flight.aircraftInstanceId)) {
+      if (!has(ctx.aircraft, flight.aircraftInstanceId)) {
         issues.push({
           path: `schedules.${schedule.id}.flights.${flight.id}.aircraftInstanceId`,
-          message: "Scheduled flight aircraft must exist.",
+          message: "Scheduled flight aircraft must exist."
         });
       }
     }
   }
+};
 
+/**
+ * Validates the relationships for contracts and objective progress.
+ *
+ * @param save - The save game to validate.
+ * @param ctx - The validation context containing lookup sets.
+ * @param issues - The list of issues to append to.
+ */
+const validateContractsAndProgress = (
+  save: SaveGame,
+  ctx: ValidationContext,
+  issues: RelationshipIssue[]
+) => {
   for (const contract of save.contracts) {
-    if (contract.relatedRouteId && !has(routes, contract.relatedRouteId)) {
+    if (contract.relatedRouteId && !has(ctx.routes, contract.relatedRouteId)) {
       issues.push({
         path: `contracts.${contract.id}.relatedRouteId`,
-        message: "Contract route must exist.",
+        message: "Contract route must exist."
       });
     }
-    if (
-      contract.trackableObjectiveId &&
-      !has(objectives, contract.trackableObjectiveId)
-    ) {
+    if (contract.trackableObjectiveId && !has(ctx.objectives, contract.trackableObjectiveId)) {
       issues.push({
         path: `contracts.${contract.id}.trackableObjectiveId`,
-        message: "Contract trackable objective must exist.",
+        message: "Contract trackable objective must exist."
       });
     }
   }
 
   for (const progress of save.objectiveProgress) {
-    if (!has(objectives, progress.objectiveId)) {
+    if (!has(ctx.objectives, progress.objectiveId)) {
       issues.push({
         path: `objectiveProgress.${progress.id}.objectiveId`,
-        message: "Objective progress target must exist.",
+        message: "Objective progress target must exist."
       });
     }
   }
+};
+
+/**
+ * Validates the referential integrity of a save game object.
+ * Checks that all ID references (e.g., aircraftTypeId on an Aircraft) point to
+ * an existing entity within the same save game.
+ *
+ * @param save - The save game object to validate.
+ * @returns An array of relationship issues found, or an empty array if all references are valid.
+ */
+export const validateSaveGameRelationships = (save: SaveGame): RelationshipIssue[] => {
+  const issues: RelationshipIssue[] = [];
+  const ctx: ValidationContext = {
+    airports: new Set(save.airports.map((airport) => airport.id)),
+    manufacturers: new Set(save.aircraftManufacturers.map((manufacturer) => manufacturer.id)),
+    aircraftTypes: new Set(save.aircraftTypes.map((type) => type.id)),
+    aircraft: new Set(save.aircraft.map((item) => item.id)),
+    routes: new Set(save.routes.map((route) => route.id)),
+    schedules: new Set(save.schedules.map((schedule) => schedule.id)),
+    contracts: new Set(save.contracts.map((contract) => contract.id)),
+    objectives: new Set(save.objectives.map((objective) => objective.id)),
+    objectiveProgress: new Set(save.objectiveProgress.map((progress) => progress.id)),
+    unlocks: new Set(save.featureUnlocks.map((unlock) => unlock.id))
+  };
+
+  validateAirline(save, ctx, issues);
+  validateAircraftEntities(save, ctx, issues);
+  validateRoutesAndSchedules(save, ctx, issues);
+  validateContractsAndProgress(save, ctx, issues);
 
   return issues;
 };
-
