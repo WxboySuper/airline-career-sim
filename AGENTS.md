@@ -253,3 +253,11 @@ Ask:
 4. Does this belong now, or is it a future branch feature?
 
 If the answer is unclear, keep the implementation small and document the assumption.
+
+## Implementation Notes
+
+If an agent needs to leave implementation notes, assumptions, task summaries, or temporary handoff notes, place them in `docs/agent-notes/`.
+
+This folder is gitignored and should not be treated as permanent documentation.
+
+Permanent design decisions belong in the normal `docs/` files and should only be updated intentionally.

@@ -8,7 +8,7 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "eslint .",
-    "test": "pnpm -r test",
+    "test": "pnpm --filter @airline-career-sim/shared build && pnpm --filter @airline-career-sim/game-data build && vitest run packages/shared/src/index.test.ts packages/game-data/src/index.test.ts packages/game-core/src/index.test.ts apps/server/src/app.test.ts",
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --write ."
   },
@@ -16,6 +16,7 @@
     "@eslint/js": "^9.26.0",
     "@types/node": "^22.15.3",
     "@vitejs/plugin-react": "^4.4.1",
+    "@vitest/coverage-v8": "3.2.4",
     "eslint": "^9.26.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
