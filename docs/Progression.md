@@ -129,7 +129,7 @@ The game can suggest next steps, but should not force progression unless the pla
 
 The game uses a simulated clock.
 
-The player can pause the game, resume operations, and adjust simulation speed.
+The player can pause the game and resume operations. Simulation pace is selected at save creation.
 
 Time movement should feel like a live operations simulator, not a turn-based day-clicker.
 

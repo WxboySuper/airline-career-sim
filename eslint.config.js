@@ -8,7 +8,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["apps/*/src/**/*.{ts,tsx}"],
+    files: ["apps/*/src/**/*.{ts,tsx}", "apps/marketing/src/**/*.{ts.tsx}"],
     languageOptions: {
       globals: {
         document: "readonly",
