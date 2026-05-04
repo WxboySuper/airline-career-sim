@@ -114,3 +114,11 @@ Manual advance should be equivalent to simulating a small number of days while t
 Catch-up should call the same simulation logic for multiple days while respecting catch-up-specific stopping rules.
 
 The simulation should be deterministic where practical.
+
+## Relationship to Time Pace
+
+Each save has a selected simulation pace.
+
+Operations catch-up uses that pace to determine how much in-game time has passed while the player was away.
+
+Catch-up should not use a separate unrelated time conversion unless a scenario or special rule explicitly overrides it.

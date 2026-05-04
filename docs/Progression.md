@@ -125,6 +125,20 @@ A player may stay in an act longer to:
 
 The game can suggest next steps, but should not force progression unless the player has chosen a scenario with strict rules.
 
+## Time Model
+
+The game uses a simulated clock.
+
+The player can pause the game, resume operations, and adjust simulation speed.
+
+Time movement should feel like a live operations simulator, not a turn-based day-clicker.
+
+The player plans while paused, then runs the clock to operate flights.
+
+The game should automatically pause or stop time for major blocking events, important story decisions, invalid schedules, serious financial warnings, grounded aircraft, or required player choices.
+
+Operations catch-up is the offline version of the same time system. It simulates stable scheduled operations while the player is away, but it does not advance major story decisions automatically.
+
 ## Challenge Pressure
 
 The game should create pressure through simulation systems, not arbitrary timers.
@@ -151,3 +165,22 @@ Avoid:
 - Making contracts feel like random chores
 - Making progression only about money
 - Using fake mobile-game currencies as the main progression driver
+
+## Feature Unlocks
+
+Basic game features should unlock gradually through story objectives, especially during Act 1.
+
+This allows the game to introduce complexity in layers.
+
+Feature unlocks should feel like the airline gaining capability rather than the UI arbitrarily hiding tools.
+
+Examples of early feature unlocks:
+
+- Route planning
+- Schedule board
+- Operations report
+- Operations catch-up
+- Private contracts
+- Business/finance view
+- Maintenance view
+- Certification path
