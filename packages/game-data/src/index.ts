@@ -8,14 +8,14 @@ export const sampleSimulationPaces = [
     displayName: "Standard",
     realMinutesPerGameDay: 60,
     catchUpEnabled: true,
-    catchUpCapGameDays: 7,
+    catchUpCapGameDays: 7
   },
   {
     id: "manual",
     displayName: "Manual",
     realMinutesPerGameDay: 0.0001,
-    catchUpEnabled: false,
-  },
+    catchUpEnabled: false
+  }
 ];
 
 export const rawAirportSourceStub = {
@@ -29,7 +29,7 @@ export const rawAirportSourceStub = {
     elevationFeet: 873,
     latitude: 42.5571,
     longitude: -92.4003,
-    timezone: "America/Chicago",
+    timezone: "America/Chicago"
   },
   KMCW: {
     icao: "KMCW",
@@ -41,8 +41,8 @@ export const rawAirportSourceStub = {
     elevationFeet: 1214,
     latitude: 43.1578,
     longitude: -93.3313,
-    timezone: "America/Chicago",
-  },
+    timezone: "America/Chicago"
+  }
 };
 
 export const curatedAirportStubs = [
@@ -66,7 +66,7 @@ export const curatedAirportStubs = [
     marketGroup: "Iowa community airports",
     notes:
       "Sample/stub curated airport: small enough for the founder story with nearby commuter markets.",
-    manualOverrides: ["starting-airport-eligible"],
+    manualOverrides: ["starting-airport-eligible"]
   },
   {
     ...rawAirportSourceStub.KMCW,
@@ -86,10 +86,9 @@ export const curatedAirportStubs = [
     competitorPresence: 16,
     region: "Midwest",
     marketGroup: "Iowa community airports",
-    notes:
-      "Sample/stub curated airport: thin early route target for simple founder operations.",
-    manualOverrides: [],
-  },
+    notes: "Sample/stub curated airport: thin early route target for simple founder operations.",
+    manualOverrides: []
+  }
 ];
 
 export const sampleManufacturers = [
@@ -101,7 +100,7 @@ export const sampleManufacturers = [
     weaknessTags: ["basic-cabin", "moderate-reliability"],
     supportQuality: 58,
     typicalCostProfile: "budget",
-    typicalReliabilityProfile: "standard",
+    typicalReliabilityProfile: "standard"
   },
   {
     id: "manufacturer:kestrel",
@@ -111,8 +110,8 @@ export const sampleManufacturers = [
     weaknessTags: ["slower", "higher-upfront-cost"],
     supportQuality: 72,
     typicalCostProfile: "balanced",
-    typicalReliabilityProfile: "rugged",
-  },
+    typicalReliabilityProfile: "rugged"
+  }
 ];
 
 export const sampleAircraftTypes = [
@@ -138,7 +137,7 @@ export const sampleAircraftTypes = [
     monthlyLeasePrice: 8500,
     deliveryTimeDays: 0,
     partnerCompatibility: "none",
-    notes: "Cheap starter aircraft with little room for mistakes.",
+    notes: "Cheap starter aircraft with little room for mistakes."
   },
   {
     id: "aircraft-type:kestrel-k10-trail",
@@ -162,8 +161,8 @@ export const sampleAircraftTypes = [
     monthlyLeasePrice: 11200,
     deliveryTimeDays: 0,
     partnerCompatibility: "eligible",
-    notes: "More expensive starter aircraft with rugged airport performance.",
-  },
+    notes: "More expensive starter aircraft with rugged airport performance."
+  }
 ];
 
 export const sampleAircraft = [
@@ -185,14 +184,14 @@ export const sampleAircraft = [
       operationalControl: "player-airline",
       restrictedToContractIds: [],
       canBeRetainedAfterSeparation: true,
-      mustReturnOnSeparation: false,
+      mustReturnOnSeparation: false
     },
     monthlyPayment: 0,
     residualValue: 260000,
     assignedBase: "airport:kalo",
     assignedScheduleId: "schedule:nc101as-weekly",
-    contractRestrictions: [],
-  },
+    contractRestrictions: []
+  }
 ];
 
 export const sampleRoutes = [
@@ -207,17 +206,17 @@ export const sampleRoutes = [
       localDemand: 34,
       businessDemand: 20,
       leisureDemand: 28,
-      connectingDemand: 0,
+      connectingDemand: 0
     },
     frequencySummary: {
       weeklyRoundTrips: 5,
-      targetDailyFrequency: 1,
+      targetDailyFrequency: 1
     },
     assignedScheduleIds: ["schedule:nc101as-weekly"],
     performanceHistory: [],
     relatedContractIds: ["contract:weekend-community-shuttle"],
-    unlockRequirements: ["founder route authority"],
-  },
+    unlockRequirements: ["founder route authority"]
+  }
 ];
 
 export const sampleSchedules = [
@@ -236,20 +235,20 @@ export const sampleSchedules = [
         turnTimeMinutes: 30,
         daysOfOperation: ["mon", "tue", "wed", "thu", "fri"],
         status: "active",
-        warnings: [],
-      },
+        warnings: []
+      }
     ],
     status: "active",
-    warnings: [],
-  },
+    warnings: []
+  }
 ];
 
 export const sampleFeatureUnlocks = [
   {
     id: "unlock:operations-report",
     name: "Operations Report",
-    description: "Review the result of completed operating periods.",
-  },
+    description: "Review the result of completed operating periods."
+  }
 ];
 
 export const sampleObjectives = [
@@ -263,23 +262,23 @@ export const sampleObjectives = [
         id: "passengers",
         type: "carry-passengers",
         targetValue: 6,
-        description: "Carry at least six passengers.",
+        description: "Carry at least six passengers."
       },
       {
         id: "report",
         type: "review-report",
-        description: "Review the first operations report.",
-      },
+        description: "Review the first operations report."
+      }
     ],
     rewards: {
       reputation: 2,
       operationalTrust: 3,
       unlockIds: ["unlock:operations-report"],
-      nextObjectiveIds: [],
+      nextObjectiveIds: []
     },
     milestoneIds: [],
-    visible: true,
-  },
+    visible: true
+  }
 ];
 
 export const sampleObjectiveProgress = [
@@ -289,10 +288,10 @@ export const sampleObjectiveProgress = [
     status: "active",
     requirementProgress: {
       passengers: 0,
-      report: 0,
+      report: 0
     },
-    startedAt: "2026-05-04T08:00:00.000-05:00",
-  },
+    startedAt: "2026-05-04T08:00:00.000-05:00"
+  }
 ];
 
 export const sampleContracts = [
@@ -309,31 +308,31 @@ export const sampleContracts = [
         type: "operate-route",
         description: "Operate the Waterloo to Mason City shuttle.",
         targetValue: 2,
-        routeId: "route:kalo-kmcw",
+        routeId: "route:kalo-kmcw"
       },
       {
         type: "maintain-reliability",
         description: "Keep reliability at or above 80 during the contract.",
-        targetValue: 80,
-      },
+        targetValue: 80
+      }
     ],
     rewards: {
       cash: 12000,
       reputation: 1,
       unlockIds: [],
-      nextObjectiveIds: [],
+      nextObjectiveIds: []
     },
     penalties: [
       {
         type: "cash",
         amount: 3500,
-        description: "Missed service penalty.",
-      },
+        description: "Missed service penalty."
+      }
     ],
     deadline: "2026-05-11T23:59:59.000-05:00",
     status: "offered",
-    trackableObjectiveId: "objective:operate-first-route",
-  },
+    trackableObjectiveId: "objective:operate-first-route"
+  }
 ];
 
 export const sampleInboxMessages = [
@@ -351,9 +350,9 @@ export const sampleInboxMessages = [
     relatedRouteId: "route:kalo-kmcw",
     actionTarget: {
       type: "open-schedule-board",
-      targetId: "schedule:nc101as-weekly",
-    },
-  },
+      targetId: "schedule:nc101as-weekly"
+    }
+  }
 ];
 
 export const sampleReports = [
@@ -363,7 +362,7 @@ export const sampleReports = [
     createdAt: "2026-05-04T10:00:00.000-05:00",
     simulatedTimeRange: {
       startsAt: "2026-05-04T08:00:00.000-05:00",
-      endsAt: "2026-05-04T10:00:00.000-05:00",
+      endsAt: "2026-05-04T10:00:00.000-05:00"
     },
     flightsOperated: 0,
     passengersCarried: 0,
@@ -375,8 +374,8 @@ export const sampleReports = [
     contractProgress: [],
     objectiveProgress: [],
     warnings: [],
-    suggestedNextAction: "Run the first scheduled flight.",
-  },
+    suggestedNextAction: "Run the first scheduled flight."
+  }
 ];
 
 export const sampleAirline = {
@@ -398,7 +397,7 @@ export const sampleAirline = {
   aircraftIds: ["aircraft:nc101as"],
   routeIds: ["route:kalo-kmcw"],
   contractIds: ["contract:weekend-community-shuttle"],
-  objectiveProgressIds: ["objective-progress:operate-first-route"],
+  objectiveProgressIds: ["objective-progress:operate-first-route"]
 };
 
 export const sampleSaveGame = {
@@ -427,6 +426,6 @@ export const sampleSaveGame = {
   settings: {
     difficulty: "standard",
     simulationPaceId: "standard",
-    autosaveEnabled: true,
-  },
+    autosaveEnabled: true
+  }
 };
