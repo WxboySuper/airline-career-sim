@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  aircraftInstanceSchema,
-  productName,
-  simulationPaceSchema,
-} from "./index";
+import { aircraftInstanceSchema, productName, simulationPaceSchema } from "./index";
 
 describe("shared package", () => {
   it("exports the product name", () => {
@@ -18,11 +14,11 @@ describe("shared package", () => {
         displayName: "Standard",
         realMinutesPerGameDay: 60,
         catchUpEnabled: true,
-        catchUpCapGameDays: 7,
-      }),
+        catchUpCapGameDays: 7
+      })
     ).toMatchObject({
       id: "standard",
-      catchUpEnabled: true,
+      catchUpEnabled: true
     });
   });
 
@@ -48,16 +44,15 @@ describe("shared package", () => {
         restrictedToContractIds: ["contract:northstar-feed"],
         canBeRetainedAfterSeparation: true,
         buyoutPrice: 1800000,
-        mustReturnOnSeparation: false,
+        mustReturnOnSeparation: false
       },
       monthlyPayment: 42000,
       residualValue: 2400000,
       assignedBase: "airport:kalo",
-      contractRestrictions: ["contract:northstar-feed"],
+      contractRestrictions: ["contract:northstar-feed"]
     });
 
     expect(aircraft.ownership.acquisitionType).toBe("partner-financed");
     expect(aircraft.ownership.canBeRetainedAfterSeparation).toBe(true);
   });
 });
-

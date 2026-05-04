@@ -39,10 +39,8 @@ export const airlineIdSchema = brandedIdSchema<"AirlineId">("airline");
 export const airportIdSchema = brandedIdSchema<"AirportId">("airport");
 export const aircraftManufacturerIdSchema =
   brandedIdSchema<"AircraftManufacturerId">("manufacturer");
-export const aircraftTypeIdSchema =
-  brandedIdSchema<"AircraftTypeId">("aircraft-type");
-export const aircraftInstanceIdSchema =
-  brandedIdSchema<"AircraftInstanceId">("aircraft");
+export const aircraftTypeIdSchema = brandedIdSchema<"AircraftTypeId">("aircraft-type");
+export const aircraftInstanceIdSchema = brandedIdSchema<"AircraftInstanceId">("aircraft");
 export const routeIdSchema = brandedIdSchema<"RouteId">("route");
 export const scheduleIdSchema = brandedIdSchema<"ScheduleId">("schedule");
 export const flightIdSchema = brandedIdSchema<"FlightId">("flight");
@@ -50,12 +48,10 @@ export const contractIdSchema = brandedIdSchema<"ContractId">("contract");
 export const objectiveIdSchema = brandedIdSchema<"ObjectiveId">("objective");
 export const objectiveProgressIdSchema =
   brandedIdSchema<"ObjectiveProgressId">("objective-progress");
-export const inboxMessageIdSchema =
-  brandedIdSchema<"InboxMessageId">("message");
+export const inboxMessageIdSchema = brandedIdSchema<"InboxMessageId">("message");
 export const reportIdSchema = brandedIdSchema<"ReportId">("report");
 export const saveIdSchema = brandedIdSchema<"SaveId">("save");
-export const featureUnlockIdSchema =
-  brandedIdSchema<"FeatureUnlockId">("unlock");
+export const featureUnlockIdSchema = brandedIdSchema<"FeatureUnlockId">("unlock");
 
 const scoreSchema = z.number().int().min(0).max(100);
 const positiveMoneySchema = z.number().int().nonnegative();
@@ -70,7 +66,7 @@ export const careerPhaseSchema = z.enum([
   "affiliate-growth",
   "independence-path",
   "self-sufficient-regional",
-  "national-expansion",
+  "national-expansion"
 ]);
 export type CareerPhase = z.infer<typeof careerPhaseSchema>;
 
@@ -82,7 +78,7 @@ export const featureUnlockSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   unlockedAt: isoDateTimeSchema.optional(),
-  sourceObjectiveId: objectiveIdSchema.optional(),
+  sourceObjectiveId: objectiveIdSchema.optional()
 });
 export type FeatureUnlock = z.infer<typeof featureUnlockSchema>;
 
@@ -91,7 +87,7 @@ export const simulationPaceSchema = z.object({
   displayName: z.string().min(1),
   realMinutesPerGameDay: z.number().positive(),
   catchUpEnabled: z.boolean(),
-  catchUpCapGameDays: z.number().int().positive().optional(),
+  catchUpCapGameDays: z.number().int().positive().optional()
 });
 export type SimulationPace = z.infer<typeof simulationPaceSchema>;
 
@@ -105,14 +101,11 @@ export const rawAirportEntrySchema = z.object({
   elevationFeet: z.number().int().optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  timezone: z.string().min(1),
+  timezone: z.string().min(1)
 });
 export type RawAirportEntry = z.infer<typeof rawAirportEntrySchema>;
 
-export const rawAirportSchema = z.record(
-  z.string().min(3),
-  rawAirportEntrySchema,
-);
+export const rawAirportSchema = z.record(z.string().min(3), rawAirportEntrySchema);
 export type RawAirportSource = z.infer<typeof rawAirportSchema>;
 
 export const airportClassSchema = z.enum([
@@ -121,17 +114,11 @@ export const airportClassSchema = z.enum([
   "regional",
   "commercial",
   "major",
-  "global-gateway",
+  "global-gateway"
 ]);
 export type AirportClass = z.infer<typeof airportClassSchema>;
 
-export const runwayClassSchema = z.enum([
-  "short",
-  "standard",
-  "regional",
-  "mainline",
-  "heavy",
-]);
+export const runwayClassSchema = z.enum(["short", "standard", "regional", "mainline", "heavy"]);
 export type RunwayClass = z.infer<typeof runwayClassSchema>;
 
 export const curatedAirportSchema = rawAirportEntrySchema.extend({
@@ -152,7 +139,7 @@ export const curatedAirportSchema = rawAirportEntrySchema.extend({
   region: z.string().min(1),
   marketGroup: z.string().min(1),
   notes: z.string().optional(),
-  manualOverrides: z.array(z.string()).default([]),
+  manualOverrides: z.array(z.string()).default([])
 });
 export type CuratedAirport = z.infer<typeof curatedAirportSchema>;
 
@@ -164,11 +151,9 @@ export const aircraftManufacturerSchema = z.object({
   weaknessTags: z.array(z.string().min(1)),
   supportQuality: scoreSchema,
   typicalCostProfile: z.enum(["budget", "balanced", "premium"]),
-  typicalReliabilityProfile: z.enum(["fragile", "standard", "rugged"]),
+  typicalReliabilityProfile: z.enum(["fragile", "standard", "rugged"])
 });
-export type AircraftManufacturer = z.infer<
-  typeof aircraftManufacturerSchema
->;
+export type AircraftManufacturer = z.infer<typeof aircraftManufacturerSchema>;
 
 export const aircraftCategorySchema = z.enum([
   "founder",
@@ -177,19 +162,12 @@ export const aircraftCategorySchema = z.enum([
   "large-regional-turboprop",
   "small-regional-jet",
   "large-regional-jet",
-  "crossover-jet",
+  "crossover-jet"
 ]);
 export type AircraftCategory = z.infer<typeof aircraftCategorySchema>;
 
-export const partnerCompatibilitySchema = z.enum([
-  "none",
-  "eligible",
-  "preferred",
-  "required",
-]);
-export type PartnerCompatibility = z.infer<
-  typeof partnerCompatibilitySchema
->;
+export const partnerCompatibilitySchema = z.enum(["none", "eligible", "preferred", "required"]);
+export type PartnerCompatibility = z.infer<typeof partnerCompatibilitySchema>;
 
 export const aircraftTypeSchema = z.object({
   id: aircraftTypeIdSchema,
@@ -213,7 +191,7 @@ export const aircraftTypeSchema = z.object({
   monthlyLeasePrice: positiveMoneySchema,
   deliveryTimeDays: z.number().int().nonnegative(),
   partnerCompatibility: partnerCompatibilitySchema,
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 export type AircraftType = z.infer<typeof aircraftTypeSchema>;
 
@@ -225,26 +203,21 @@ export const acquisitionTypeSchema = z.enum([
   "wet-lease",
   "finance-lease",
   "partner-owned",
-  "partner-financed",
+  "partner-financed"
 ]);
 export type AcquisitionType = z.infer<typeof acquisitionTypeSchema>;
 
 export const ownershipControlSchema = z.object({
   acquisitionType: acquisitionTypeSchema,
   legalOwner: z.enum(["player-airline", "lessor", "partner-airline"]),
-  paymentResponsibleParty: z.enum([
-    "player-airline",
-    "partner-airline",
-    "shared",
-    "none",
-  ]),
+  paymentResponsibleParty: z.enum(["player-airline", "partner-airline", "shared", "none"]),
   operationalControl: z.enum(["player-airline", "partner-airline", "shared"]),
   partnerId: z.string().min(1).optional(),
   partnerContractId: contractIdSchema.optional(),
   restrictedToContractIds: z.array(contractIdSchema).default([]),
   canBeRetainedAfterSeparation: z.boolean(),
   buyoutPrice: positiveMoneySchema.optional(),
-  mustReturnOnSeparation: z.boolean(),
+  mustReturnOnSeparation: z.boolean()
 });
 export type OwnershipControl = z.infer<typeof ownershipControlSchema>;
 
@@ -263,14 +236,14 @@ export const aircraftInstanceSchema = z.object({
     "inspection-due",
     "maintenance-due",
     "in-maintenance",
-    "grounded",
+    "grounded"
   ]),
   ownership: ownershipControlSchema,
   monthlyPayment: positiveMoneySchema,
   residualValue: positiveMoneySchema,
   assignedBase: airportIdSchema,
   assignedScheduleId: scheduleIdSchema.optional(),
-  contractRestrictions: z.array(contractIdSchema).default([]),
+  contractRestrictions: z.array(contractIdSchema).default([])
 });
 export type AircraftInstance = z.infer<typeof aircraftInstanceSchema>;
 
@@ -293,7 +266,7 @@ export const airlineSchema = z.object({
   aircraftIds: z.array(aircraftInstanceIdSchema),
   routeIds: z.array(routeIdSchema),
   contractIds: z.array(contractIdSchema),
-  objectiveProgressIds: z.array(objectiveProgressIdSchema),
+  objectiveProgressIds: z.array(objectiveProgressIdSchema)
 });
 export type Airline = z.infer<typeof airlineSchema>;
 
@@ -301,7 +274,7 @@ export const demandSummarySchema = z.object({
   localDemand: scoreSchema,
   businessDemand: scoreSchema,
   leisureDemand: scoreSchema,
-  connectingDemand: scoreSchema,
+  connectingDemand: scoreSchema
 });
 export type DemandSummary = z.infer<typeof demandSummarySchema>;
 
@@ -315,7 +288,7 @@ export const routeSchema = z.object({
   demandSummary: demandSummarySchema,
   frequencySummary: z.object({
     weeklyRoundTrips: z.number().int().nonnegative(),
-    targetDailyFrequency: z.number().nonnegative(),
+    targetDailyFrequency: z.number().nonnegative()
   }),
   assignedScheduleIds: z.array(scheduleIdSchema),
   performanceHistory: z.array(
@@ -324,11 +297,11 @@ export const routeSchema = z.object({
       periodEnd: isoDateTimeSchema,
       passengers: z.number().int().nonnegative(),
       revenue: moneySchema,
-      reliability: scoreSchema,
-    }),
+      reliability: scoreSchema
+    })
   ),
   relatedContractIds: z.array(contractIdSchema),
-  unlockRequirements: z.array(z.string()).default([]),
+  unlockRequirements: z.array(z.string()).default([])
 });
 export type Route = z.infer<typeof routeSchema>;
 
@@ -337,7 +310,10 @@ export const scheduledFlightSchema = z.object({
   routeId: routeIdSchema,
   aircraftInstanceId: aircraftInstanceIdSchema,
   departureTimeLocal: z.string().regex(/^\d{2}:\d{2}$/),
-  arrivalTimeLocal: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  arrivalTimeLocal: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
   blockTimeMinutes: minutesSchema,
   turnTimeMinutes: minutesSchema,
   daysOfOperation: z.array(z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"])),
@@ -347,9 +323,9 @@ export const scheduledFlightSchema = z.object({
     .object({
       startsAt: isoDateTimeSchema,
       endsAt: isoDateTimeSchema,
-      reason: z.string().min(1),
+      reason: z.string().min(1)
     })
-    .optional(),
+    .optional()
 });
 export type ScheduledFlight = z.infer<typeof scheduledFlightSchema>;
 
@@ -359,7 +335,7 @@ export const aircraftScheduleSchema = z.object({
   baseAirportId: airportIdSchema,
   flights: z.array(scheduledFlightSchema),
   status: z.enum(["draft", "active", "invalid", "paused"]),
-  warnings: z.array(z.string()).default([]),
+  warnings: z.array(z.string()).default([])
 });
 export type AircraftSchedule = z.infer<typeof aircraftScheduleSchema>;
 
@@ -376,12 +352,12 @@ export const cashTransactionSchema = z.object({
     "staff",
     "facility",
     "penalty",
-    "other",
+    "other"
   ]),
   memo: z.string().min(1),
   relatedAircraftId: aircraftInstanceIdSchema.optional(),
   relatedContractId: contractIdSchema.optional(),
-  relatedRouteId: routeIdSchema.optional(),
+  relatedRouteId: routeIdSchema.optional()
 });
 export type CashTransaction = z.infer<typeof cashTransactionSchema>;
 
@@ -390,11 +366,9 @@ export const dailyFinancialSummarySchema = z.object({
   revenue: moneySchema,
   expenses: moneySchema,
   profitLoss: moneySchema,
-  transactions: z.array(cashTransactionSchema),
+  transactions: z.array(cashTransactionSchema)
 });
-export type DailyFinancialSummary = z.infer<
-  typeof dailyFinancialSummarySchema
->;
+export type DailyFinancialSummary = z.infer<typeof dailyFinancialSummarySchema>;
 
 export const objectiveRequirementSchema = z.object({
   id: z.string().min(1),
@@ -406,23 +380,21 @@ export const objectiveRequirementSchema = z.object({
     "complete-contract",
     "review-report",
     "use-catch-up",
-    "apply-for-certification",
+    "apply-for-certification"
   ]),
   targetValue: z.number().nonnegative().optional(),
   relatedContractId: contractIdSchema.optional(),
   relatedReportId: reportIdSchema.optional(),
-  description: z.string().min(1),
+  description: z.string().min(1)
 });
-export type ObjectiveRequirement = z.infer<
-  typeof objectiveRequirementSchema
->;
+export type ObjectiveRequirement = z.infer<typeof objectiveRequirementSchema>;
 
 export const objectiveRewardSchema = z.object({
   cash: positiveMoneySchema.optional(),
   reputation: z.number().int().nonnegative().optional(),
   operationalTrust: z.number().int().nonnegative().optional(),
   unlockIds: z.array(featureUnlockIdSchema).default([]),
-  nextObjectiveIds: z.array(objectiveIdSchema).default([]),
+  nextObjectiveIds: z.array(objectiveIdSchema).default([])
 });
 export type ObjectiveReward = z.infer<typeof objectiveRewardSchema>;
 
@@ -434,7 +406,7 @@ export const careerObjectiveSchema = z.object({
   requirements: z.array(objectiveRequirementSchema),
   rewards: objectiveRewardSchema,
   milestoneIds: z.array(z.string().min(1)).default([]),
-  visible: z.boolean(),
+  visible: z.boolean()
 });
 export type CareerObjective = z.infer<typeof careerObjectiveSchema>;
 
@@ -444,7 +416,7 @@ export const objectiveProgressSchema = z.object({
   status: z.enum(["locked", "active", "complete", "failed"]),
   requirementProgress: z.record(z.string(), z.number().nonnegative()),
   startedAt: isoDateTimeSchema.optional(),
-  completedAt: isoDateTimeSchema.optional(),
+  completedAt: isoDateTimeSchema.optional()
 });
 export type ObjectiveProgress = z.infer<typeof objectiveProgressSchema>;
 
@@ -452,7 +424,7 @@ export const milestoneSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
-  achievedAt: isoDateTimeSchema.optional(),
+  achievedAt: isoDateTimeSchema.optional()
 });
 export type Milestone = z.infer<typeof milestoneSchema>;
 
@@ -462,13 +434,13 @@ export const contractRequirementSchema = z.object({
     "carry-passengers",
     "maintain-reliability",
     "aircraft-category",
-    "airport-access",
+    "airport-access"
   ]),
   description: z.string().min(1),
   targetValue: z.number().nonnegative().optional(),
   routeId: routeIdSchema.optional(),
   airportIds: z.array(airportIdSchema).default([]),
-  aircraftCategory: aircraftCategorySchema.optional(),
+  aircraftCategory: aircraftCategorySchema.optional()
 });
 export type ContractRequirement = z.infer<typeof contractRequirementSchema>;
 
@@ -486,8 +458,8 @@ export const contractSchema = z.object({
     z.object({
       type: z.enum(["cash", "reputation", "operational-trust"]),
       amount: z.number().int().nonnegative(),
-      description: z.string().min(1),
-    }),
+      description: z.string().min(1)
+    })
   ),
   deadline: isoDateTimeSchema.optional(),
   status: z.enum(["offered", "active", "complete", "failed", "expired"]),
@@ -497,9 +469,9 @@ export const contractSchema = z.object({
       allowedOwnershipTypes: z.array(acquisitionTypeSchema),
       minimumCategory: aircraftCategorySchema.optional(),
       minimumReliability: scoreSchema.optional(),
-      restrictedToPartnerFlying: z.boolean(),
+      restrictedToPartnerFlying: z.boolean()
     })
-    .optional(),
+    .optional()
 });
 export type Contract = z.infer<typeof contractSchema>;
 
@@ -512,19 +484,11 @@ export const inboxMessageSchema = z.object({
     "dispatch",
     "airport-office",
     "partner-airline",
-    "system",
+    "system"
   ]),
   subject: z.string().min(1),
   body: z.string().min(1),
-  category: z.enum([
-    "story",
-    "contract",
-    "operations",
-    "finance",
-    "airport",
-    "partner",
-    "system",
-  ]),
+  category: z.enum(["story", "contract", "operations", "finance", "airport", "partner", "system"]),
   createdAt: isoDateTimeSchema,
   read: z.boolean(),
   archived: z.boolean(),
@@ -539,12 +503,12 @@ export const inboxMessageSchema = z.object({
         "open-schedule-board",
         "view-contract",
         "view-report",
-        "view-objective",
+        "view-objective"
       ]),
-      targetId: z.string().min(1).optional(),
+      targetId: z.string().min(1).optional()
     })
     .optional(),
-  rewardUnlockId: featureUnlockIdSchema.optional(),
+  rewardUnlockId: featureUnlockIdSchema.optional()
 });
 export type InboxMessage = z.infer<typeof inboxMessageSchema>;
 
@@ -554,7 +518,7 @@ export const operationsReportSchema = z.object({
   createdAt: isoDateTimeSchema,
   simulatedTimeRange: z.object({
     startsAt: isoDateTimeSchema,
-    endsAt: isoDateTimeSchema,
+    endsAt: isoDateTimeSchema
   }),
   flightsOperated: z.number().int().nonnegative(),
   passengersCarried: z.number().int().nonnegative(),
@@ -566,13 +530,13 @@ export const operationsReportSchema = z.object({
     z.object({
       aircraftId: aircraftInstanceIdSchema,
       conditionBefore: scoreSchema,
-      conditionAfter: scoreSchema,
-    }),
+      conditionAfter: scoreSchema
+    })
   ),
   contractProgress: z.array(z.string()).default([]),
   objectiveProgress: z.array(z.string()).default([]),
   warnings: z.array(z.string()).default([]),
-  suggestedNextAction: z.string().min(1).optional(),
+  suggestedNextAction: z.string().min(1).optional()
 });
 export type OperationsReport = z.infer<typeof operationsReportSchema>;
 
@@ -602,7 +566,7 @@ export const saveGameSchema = z.object({
   settings: z.object({
     difficulty: difficultySchema,
     simulationPaceId: simulationPaceSchema.shape.id,
-    autosaveEnabled: z.boolean(),
-  }),
+    autosaveEnabled: z.boolean()
+  })
 });
 export type SaveGame = z.infer<typeof saveGameSchema>;

@@ -10,7 +10,7 @@ import {
   rawAirportSchema,
   saveGameSchema,
   careerObjectiveSchema,
-  rawAirportEntrySchema,
+  rawAirportEntrySchema
 } from "@airline-career-sim/shared";
 
 import {
@@ -22,7 +22,7 @@ import {
   sampleObjectives,
   sampleSaveGame,
   curatedAirportStubs,
-  rawAirportSourceStub,
+  rawAirportSourceStub
 } from "./index";
 
 describe("sample game data", () => {
@@ -38,14 +38,12 @@ describe("sample game data", () => {
         elevationFeet: 873,
         latitude: 42.5571,
         longitude: -92.4003,
-        timezone: "America/Chicago",
-      },
+        timezone: "America/Chicago"
+      }
     };
 
     expect(() => rawAirportSchema.parse(representativeRawAirportSource)).not.toThrow();
-    expect(rawAirportSchema.parse(representativeRawAirportSource).KALO?.icao).toBe(
-      "KALO",
-    );
+    expect(rawAirportSchema.parse(representativeRawAirportSource).KALO?.icao).toBe("KALO");
   });
 
   it("validates sample data against shared schemas", () => {

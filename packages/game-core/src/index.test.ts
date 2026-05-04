@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 import { sampleSaveGame } from "@airline-career-sim/game-data";
 import { saveGameSchema } from "@airline-career-sim/shared";
 
-import {
-  simulationModuleStatus,
-  validateSaveGameRelationships,
-} from "./index";
+import { simulationModuleStatus, validateSaveGameRelationships } from "./index";
 
 describe("game-core package", () => {
   it("keeps the foundation marker", () => {
@@ -25,17 +22,16 @@ describe("game-core package", () => {
       ...parsedSave,
       airline: {
         ...parsedSave.airline,
-        routeIds: ["route:missing"],
-      },
+        routeIds: ["route:missing"]
+      }
     };
 
     expect(validateSaveGameRelationships(brokenSave)).toEqual([
       {
         path: "airline.routeIds",
-        message: "Airline route reference is missing: route:missing",
-      },
+        message: "Airline route reference is missing: route:missing"
+      }
     ]);
     expect(parsedSave.airline.routeIds).toEqual(["route:kalo-kmcw"]);
   });
 });
-
