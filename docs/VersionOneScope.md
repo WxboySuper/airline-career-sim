@@ -238,6 +238,24 @@ Minimum required screens:
 
 The UI should avoid generic card-heavy design unless a card is clearly the best representation for the information.
 
+### Inbox
+
+Version 1.0 should include a basic inbox system.
+
+The inbox is used for:
+
+- Story messages
+- Co-founder/advisor guidance
+- Contract offers
+- Operational updates
+- Finance warnings
+- Feature unlocks
+- Partner communications
+
+The inbox should keep story integrated with the simulator interface.
+
+It should avoid long dialogue sequences and should not interrupt the player constantly.
+
 ## Not Required for Version 1.0
 
 The following are future branch features and should not be built unless explicitly moved into scope:

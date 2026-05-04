@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022"],
+    "types": ["node", "vitest/globals"],
+    "noEmit": false
+  },
+  "references": [{ "path": "../../packages/shared" }],
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

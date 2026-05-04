@@ -487,3 +487,103 @@ Crossover jets teach the transition into mainline thinking.
 Future narrowbodies teach route density, competition, and hub building.
 
 Future widebodies teach international risk, feed, premium cabins, and long-haul strategy.
+
+## Aircraft Competition Within Categories
+
+Each major aircraft category should have multiple competing aircraft options.
+
+Version 1.0 should generally start with two aircraft per category. More options can be added later through new manufacturers, new variants, or existing manufacturers entering new markets.
+
+Aircraft in the same category should not have a single obvious best choice. Each option should have advantages and disadvantages that fit different strategies.
+
+Differences may include:
+
+- Seat count
+- Range
+- Fuel efficiency
+- Cargo or baggage capacity
+- Cockpit or crew systems
+- Reliability
+- Maintenance cost
+- Passenger comfort
+- Airport performance
+- Turn time
+- Acquisition cost
+- Lease cost
+- Delivery time
+- Partner contract compatibility
+
+The goal is to create meaningful fleet decisions without overwhelming the player.
+
+## Aircraft Type vs Acquisition Method
+
+Aircraft type and acquisition method are separate decisions.
+
+An aircraft type defines what the aircraft is good at.
+
+The acquisition method defines how the airline gets it and what financial or reliability risk comes with it.
+
+Most aircraft should be available through multiple acquisition methods over time, such as:
+
+- New purchase
+- Used purchase
+- Operating lease
+- Partner-connected arrangement
+
+The used market should not be the only way to get a particular aircraft type unless that limitation is intentionally part of a scenario or special contract.
+
+Used aircraft are cheaper but may have:
+
+- Higher age
+- More flight hours
+- More cycles
+- Lower condition
+- Lower cabin condition
+- Higher maintenance risk
+- Lower reliability
+- More near-term repair needs
+
+New aircraft are more expensive but may offer:
+
+- Better reliability
+- Better condition
+- Full cabin configuration control
+- Lower early maintenance risk
+- Better financing or warranty options
+- Longer delivery wait depending on manufacturer
+
+## Version 1.0 Aircraft Lineup Direction
+
+Version 1.0 should begin with approximately two aircraft per major early category.
+
+### Founder Aircraft
+
+- Aster A-8 Courier
+- Kestrel K-10 Trail
+
+### Commuter Aircraft
+
+- Aster A-19 Commuter
+- Kestrel K-19 Harbor
+
+### Small Regional Turboprop
+
+- Kestrel K-32 Range
+- Vela V-34 Nova
+
+### Large Regional Turboprop
+
+- Kestrel K-52 Mesa
+- Hawthorne H-56 Connector
+
+### Small Regional Jet
+
+- Aster AJ-44 Swift
+- Hawthorne HJ-48 Link
+
+### Large Regional Jet
+
+- Hawthorne HJ-72 Bridge
+- Vela VJ-86 Arc
+
+These names are placeholders and can be revised before implementation.
