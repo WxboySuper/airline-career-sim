@@ -1,5 +1,10 @@
 import "./styles.css";
 
+/**
+ * The main component for the marketing site.
+ *
+ * @returns The rendered marketing application.
+ */
 export function App() {
   return (
     <main className="marketing-shell">

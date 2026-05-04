@@ -2,6 +2,11 @@ import "./styles.css";
 
 import { productName } from "@airline-career-sim/shared";
 
+/**
+ * The main component for the game application.
+ *
+ * @returns The rendered game application.
+ */
 export function App() {
   return (
     <main className="game-shell">
