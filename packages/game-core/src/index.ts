@@ -29,6 +29,8 @@ type ValidationContext = {
   objectives: ReadonlySet<string>;
   objectiveProgress: ReadonlySet<string>;
   unlocks: ReadonlySet<string>;
+  knownAirports: ReadonlySet<string>;
+  unlockedAirports: ReadonlySet<string>;
 };
 
 /**
@@ -50,6 +52,16 @@ const validateAirline = (save: SaveGame, ctx: ValidationContext, issues: Relatio
     issues.push({
       path: "trackedObjectiveId",
       message: "Tracked objective must exist in save objectives."
+    });
+  }
+
+  if (
+    save.airline.activeTrackedObjectiveId &&
+    !has(ctx.objectives, save.airline.activeTrackedObjectiveId)
+  ) {
+    issues.push({
+      path: "airline.activeTrackedObjectiveId",
+      message: "Airline active tracked objective must exist in save objectives."
     });
   }
 
@@ -143,6 +155,32 @@ const validateAircraftEntities = (
         message: "Aircraft assigned schedule must exist."
       });
     }
+
+    // Validate ownership references
+    if (item.ownership.partnerContractId && !has(ctx.contracts, item.ownership.partnerContractId)) {
+      issues.push({
+        path: `aircraft.${item.id}.ownership.partnerContractId`,
+        message: "Aircraft ownership partner contract must exist."
+      });
+    }
+
+    for (const id of item.ownership.restrictedToContractIds) {
+      if (!has(ctx.contracts, id)) {
+        issues.push({
+          path: `aircraft.${item.id}.ownership.restrictedToContractIds`,
+          message: `Aircraft ownership contract restriction is missing: ${id}`
+        });
+      }
+    }
+
+    for (const id of item.contractRestrictions) {
+      if (!has(ctx.contracts, id)) {
+        issues.push({
+          path: `aircraft.${item.id}.contractRestrictions`,
+          message: `Aircraft contract restriction is missing: ${id}`
+        });
+      }
+    }
   }
 };
 
@@ -176,6 +214,14 @@ const validateRoutesAndSchedules = (
         issues.push({
           path: `routes.${route.id}.assignedScheduleIds`,
           message: `Route schedule reference is missing: ${id}`
+        });
+      }
+    }
+    for (const id of route.relatedContractIds) {
+      if (!has(ctx.contracts, id)) {
+        issues.push({
+          path: `routes.${route.id}.relatedContractIds`,
+          message: `Route related contract reference is missing: ${id}`
         });
       }
     }
@@ -236,6 +282,30 @@ const validateContractsAndProgress = (
         message: "Contract trackable objective must exist."
       });
     }
+    for (const id of contract.relatedAirportIds) {
+      if (!has(ctx.airports, id)) {
+        issues.push({
+          path: `contracts.${contract.id}.relatedAirportIds`,
+          message: `Contract related airport reference is missing: ${id}`
+        });
+      }
+    }
+    for (const req of contract.requirements) {
+      if (req.routeId && !has(ctx.routes, req.routeId)) {
+        issues.push({
+          path: `contracts.${contract.id}.requirements`,
+          message: `Contract requirement route reference is missing: ${req.routeId}`
+        });
+      }
+      for (const airportId of req.airportIds) {
+        if (!has(ctx.airports, airportId)) {
+          issues.push({
+            path: `contracts.${contract.id}.requirements`,
+            message: `Contract requirement airport reference is missing: ${airportId}`
+          });
+        }
+      }
+    }
   }
 
   for (const progress of save.objectiveProgress) {
@@ -244,6 +314,81 @@ const validateContractsAndProgress = (
         path: `objectiveProgress.${progress.id}.objectiveId`,
         message: "Objective progress target must exist."
       });
+    }
+  }
+};
+
+/**
+ * Validates the relationships for top-level save game collections.
+ *
+ * @param save - The save game to validate.
+ * @param ctx - The validation context containing lookup sets.
+ * @param issues - The list of issues to append to.
+ */
+const validateSaveCollections = (
+  save: SaveGame,
+  ctx: ValidationContext,
+  issues: RelationshipIssue[]
+) => {
+  for (const id of save.knownAirportIds) {
+    if (!has(ctx.airports, id)) {
+      issues.push({
+        path: "knownAirportIds",
+        message: `Known airport reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const id of save.unlockedAirportIds) {
+    if (!has(ctx.airports, id)) {
+      issues.push({
+        path: "unlockedAirportIds",
+        message: `Unlocked airport reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const message of save.inboxMessages) {
+    if (message.relatedObjectiveId && !has(ctx.objectives, message.relatedObjectiveId)) {
+      issues.push({
+        path: `inboxMessages.${message.id}.relatedObjectiveId`,
+        message: "Inbox message objective must exist."
+      });
+    }
+    if (message.relatedContractId && !has(ctx.contracts, message.relatedContractId)) {
+      issues.push({
+        path: `inboxMessages.${message.id}.relatedContractId`,
+        message: "Inbox message contract must exist."
+      });
+    }
+    if (message.relatedRouteId && !has(ctx.routes, message.relatedRouteId)) {
+      issues.push({
+        path: `inboxMessages.${message.id}.relatedRouteId`,
+        message: "Inbox message route must exist."
+      });
+    }
+    if (message.relatedAircraftId && !has(ctx.aircraft, message.relatedAircraftId)) {
+      issues.push({
+        path: `inboxMessages.${message.id}.relatedAircraftId`,
+        message: "Inbox message aircraft must exist."
+      });
+    }
+    if (message.rewardUnlockId && !has(ctx.unlocks, message.rewardUnlockId)) {
+      issues.push({
+        path: `inboxMessages.${message.id}.rewardUnlockId`,
+        message: "Inbox message reward unlock must exist."
+      });
+    }
+  }
+
+  for (const report of save.reports) {
+    for (const change of report.aircraftConditionChanges) {
+      if (!has(ctx.aircraft, change.aircraftId)) {
+        issues.push({
+          path: `reports.${report.id}.aircraftConditionChanges`,
+          message: `Report aircraft reference is missing: ${change.aircraftId}`
+        });
+      }
     }
   }
 };
@@ -268,13 +413,16 @@ export const validateSaveGameRelationships = (save: SaveGame): RelationshipIssue
     contracts: new Set(save.contracts.map((contract) => contract.id)),
     objectives: new Set(save.objectives.map((objective) => objective.id)),
     objectiveProgress: new Set(save.objectiveProgress.map((progress) => progress.id)),
-    unlocks: new Set(save.featureUnlocks.map((unlock) => unlock.id))
+    unlocks: new Set(save.featureUnlocks.map((unlock) => unlock.id)),
+    knownAirports: new Set(save.knownAirportIds),
+    unlockedAirports: new Set(save.unlockedAirportIds)
   };
 
   validateAirline(save, ctx, issues);
   validateAircraftEntities(save, ctx, issues);
   validateRoutesAndSchedules(save, ctx, issues);
   validateContractsAndProgress(save, ctx, issues);
+  validateSaveCollections(save, ctx, issues);
 
   return issues;
 };

@@ -34,4 +34,60 @@ describe("game-core package", () => {
     ]);
     expect(parsedSave.airline.routeIds).toEqual(["route:kalo-kmcw"]);
   });
+
+  it("reports missing activeTrackedObjectiveId", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      airline: {
+        ...parsedSave.airline,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        activeTrackedObjectiveId: "objective:missing" as any
+      }
+    };
+
+    expect(validateSaveGameRelationships(brokenSave)).toContainEqual({
+      path: "airline.activeTrackedObjectiveId",
+      message: "Airline active tracked objective must exist in save objectives."
+    });
+  });
+
+  it("reports missing partnerContractId in aircraft ownership", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const aircraftId = parsedSave.aircraft[0].id;
+    const brokenSave = {
+      ...parsedSave,
+      aircraft: parsedSave.aircraft.map((a) =>
+        a.id === aircraftId
+          ? {
+              ...a,
+              ownership: {
+                ...a.ownership,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                partnerContractId: "contract:missing" as any
+              }
+            }
+          : a
+      )
+    };
+
+    expect(validateSaveGameRelationships(brokenSave)).toContainEqual({
+      path: `aircraft.${aircraftId}.ownership.partnerContractId`,
+      message: "Aircraft ownership partner contract must exist."
+    });
+  });
+
+  it("reports missing knownAirportIds", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      knownAirportIds: ["airport:missing" as any]
+    };
+
+    expect(validateSaveGameRelationships(brokenSave)).toContainEqual({
+      path: "knownAirportIds",
+      message: "Known airport reference is missing: airport:missing"
+    });
+  });
 });
