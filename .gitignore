@@ -5,3 +5,7 @@ coverage/
 *.tsbuildinfo
 docs/personal/*
 docs/prompts/*
+docs/agent-docs/*
+docs/agent-notes/*
+local/
+data/curated/work-in-progress/
