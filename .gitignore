@@ -4,4 +4,4 @@ coverage/
 .vite/
 *.tsbuildinfo
 docs/personal/*
-docs/prompt/*
+docs/prompts/*
