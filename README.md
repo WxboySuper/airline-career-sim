@@ -34,3 +34,14 @@ src/        Game source code
 ## Status
 
 Pre-production. The design is being defined before implementation.
+
+## Planned Tech Stack
+
+- Monorepo with pnpm workspaces
+- React + Vite for the marketing site
+- React + Vite for the large-screen game client
+- Node.js + TypeScript + Fastify for the backend API
+- Firebase Auth for authentication
+- Postgres for game data and saves
+- Prisma for database access and migrations
+- Shared TypeScript simulation logic in `packages/game-core`
