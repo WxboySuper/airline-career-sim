@@ -1,0 +1,36 @@
+version = 1
+
+test_patterns = [
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/*.spec.ts",
+  "**/*.spec.tsx"
+]
+
+exclude_patterns = [
+  "node_modules/**",
+  "**/node_modules/**",
+  "dist/**",
+  "**/dist/**",
+  "coverage/**",
+  "**/coverage/**",
+  "**/*.tsbuildinfo",
+  "data/airports.json"
+]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  environment = ["browser", "nodejs"]
+  module_system = "es-modules"
+  plugins = ["react"]
+
+[[analyzers]]
+name = "secrets"
+enabled = true
+
+[[transformers]]
+name = "prettier"
+enabled = true
