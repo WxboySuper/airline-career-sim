@@ -194,11 +194,13 @@ const requiredReviewedFields = [
   "marketArea"
 ] as const;
 
+/** Loads and validates the raw airport source file. */
 export async function loadRawAirportSourceFile(filePath: string): Promise<RawAirportSource> {
   const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
   return validateRawAirportSource(parsed).airports;
 }
 
+/** Loads and validates a curated airport export file, treating a missing file as an empty optional export. */
 export async function loadCuratedAirportExportFile(filePath: string): Promise<{
   airports: CuratedAirportExport;
   missing: boolean;
@@ -216,6 +218,7 @@ export async function loadCuratedAirportExportFile(filePath: string): Promise<{
   }
 }
 
+/** Validates and normalizes the raw airport source object keyed by airport code. */
 export function validateRawAirportSource(input: unknown): {
   airports: RawAirportSource;
   diagnostics: AirportPipelineDiagnostic[];
@@ -246,6 +249,7 @@ export function validateRawAirportSource(input: unknown): {
   return { airports, diagnostics };
 }
 
+/** Validates curated airport gameplay fields keyed by airport code. */
 export function validateCuratedAirportExport(input: unknown): {
   airports: CuratedAirportExport;
   diagnostics: AirportPipelineDiagnostic[];
@@ -290,6 +294,7 @@ export function validateCuratedAirportExport(input: unknown): {
   return { airports, diagnostics };
 }
 
+/** Normalizes preliminary development exports into the canonical curated airport shape. */
 function normalizeCuratedAirportRecord(record: Record<string, unknown>): Record<string, unknown> {
   if (!isPreliminaryCuratedAirportRecord(record)) {
     return record;
@@ -308,6 +313,7 @@ function normalizeCuratedAirportRecord(record: Record<string, unknown>): Record<
   };
 }
 
+/** Detects the older preliminary app-curated airport export shape. */
 function isPreliminaryCuratedAirportRecord(record: Record<string, unknown>): boolean {
   return (
     "airportClass" in record ||
@@ -318,6 +324,7 @@ function isPreliminaryCuratedAirportRecord(record: Record<string, unknown>): boo
   );
 }
 
+/** Maps preliminary airport classes into the current curated scale enum. */
 function mapPreliminaryAirportClass(value: string | undefined): CuratedAirportScale | undefined {
   if (value === "commercial") {
     return "metro";
@@ -328,6 +335,7 @@ function mapPreliminaryAirportClass(value: string | undefined): CuratedAirportSc
   return undefined;
 }
 
+/** Maps preliminary runway classes into broad runway capability classes. */
 function mapPreliminaryRunwayClass(value: string | undefined): CuratedRunwayClass | undefined {
   if (value === "regional") {
     return "medium";
@@ -341,6 +349,7 @@ function mapPreliminaryRunwayClass(value: string | undefined): CuratedRunwayClas
   return undefined;
 }
 
+/** Extracts a simple label value from generated preliminary curation notes. */
 function extractLabeledNoteValue(notes: string | undefined, label: string): string | undefined {
   if (!notes) {
     return undefined;
@@ -350,6 +359,7 @@ function extractLabeledNoteValue(notes: string | undefined, label: string): stri
   return match?.[1]?.trim();
 }
 
+/** Builds app-ready airport records from unknown raw and curated inputs. */
 export function buildAirportPipeline(
   rawInput: unknown,
   curatedInput: unknown = {},
@@ -364,6 +374,7 @@ export function buildAirportPipeline(
   });
 }
 
+/** Builds app-ready airport records from already validated raw and curated maps. */
 export function buildAirportPipelineFromValidated(
   rawAirports: RawAirportSource,
   curatedAirports: CuratedAirportExport,
@@ -446,6 +457,7 @@ export function buildAirportPipelineFromValidated(
   return { rawAirports, curatedAirports, airports, diagnostics };
 }
 
+/** Loads raw and curated airport files, then builds app-ready airport records. */
 export async function buildAirportPipelineFromFiles(
   rawAirportPath: string,
   curatedAirportPath = defaultReviewedAirportExportPath,
@@ -460,6 +472,7 @@ export async function buildAirportPipelineFromFiles(
   });
 }
 
+/** Returns broad aircraft-tier support flags for a curated runway class. */
 export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefined): AppAirportRecord["flags"] {
   const supportsFounderAircraft =
     runwayClass === "tiny" ||
@@ -484,6 +497,7 @@ export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefine
   };
 }
 
+/** Combines a raw airport and curated gameplay data into the app airport record shape. */
 function toAppAirportRecord(raw: RawAirportEntry, curated: CuratedAirportExportRecord, id: AirportId): AppAirportRecord {
   const status = curated.curationStatus ?? "unreviewed";
   const runwayCapabilities = getRunwayCapabilities(curated.runwayClass);
@@ -524,6 +538,7 @@ function toAppAirportRecord(raw: RawAirportEntry, curated: CuratedAirportExportR
   };
 }
 
+/** Normalizes a real raw source record into the shared raw airport schema. */
 function normalizeRawAirportRecord(code: string, value: unknown): Partial<RawAirportEntry> {
   if (!isPlainObject(value)) {
     return {};
@@ -544,6 +559,7 @@ function normalizeRawAirportRecord(code: string, value: unknown): Partial<RawAir
   };
 }
 
+/** Finds curated fields required before a reviewed airport can become app-ready. */
 function missingRequiredFields(curated: CuratedAirportExportRecord | undefined): string[] {
   if (!curated) {
     return [...requiredReviewedFields];
@@ -554,6 +570,7 @@ function missingRequiredFields(curated: CuratedAirportExportRecord | undefined):
   });
 }
 
+/** Explains why an airport status is skipped under the current pipeline options. */
 function skipReasonForStatus(status: AirportCurationStatus, options: AirportPipelineOptions): string | undefined {
   if (status === "reviewed") {
     return undefined;
@@ -576,6 +593,7 @@ function skipReasonForStatus(status: AirportCurationStatus, options: AirportPipe
   return undefined;
 }
 
+/** Creates a stable branded airport ID from an airport identifier. */
 function stableAirportId(icao: string): AirportId {
   const slug = icao
     .toLowerCase()
@@ -586,6 +604,7 @@ function stableAirportId(icao: string): AirportId {
 
 type MutableRecord = Record<string, unknown>;
 
+/** Copies a non-empty string field into a validated mutable record. */
 function copyString(
   record: Record<string, unknown>,
   target: MutableRecord,
@@ -597,6 +616,7 @@ function copyString(
   }
 }
 
+/** Copies a boolean field or records a type diagnostic. */
 function copyBoolean(
   record: Record<string, unknown>,
   target: MutableRecord,
@@ -615,6 +635,7 @@ function copyBoolean(
   diagnostics.push({ code, field, message: `${field} must be a boolean.` });
 }
 
+/** Copies an allowed enum field or records a value diagnostic. */
 function copyEnum<TAllowed extends readonly string[]>(
   record: Record<string, unknown>,
   target: MutableRecord,
@@ -634,6 +655,7 @@ function copyEnum<TAllowed extends readonly string[]>(
   diagnostics.push({ code, field, message: `${field} has invalid enum value ${String(value)}.` });
 }
 
+/** Copies a string-array field or records a type diagnostic. */
 function copyStringArray(
   record: Record<string, unknown>,
   target: MutableRecord,
@@ -652,26 +674,32 @@ function copyStringArray(
   diagnostics.push({ code, field, message: `${field} must be an array of strings.` });
 }
 
+/** Returns whether a value is a non-array object suitable for record validation. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Returns a trimmed string or a provided fallback. */
 function stringOrFallback(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+/** Returns a trimmed optional string. */
 function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+/** Returns a finite number or undefined. */
 function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+/** Returns a rounded finite integer or undefined. */
 function integerOrUndefined(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? Math.round(value) : undefined;
 }
 
+/** Narrows an unknown error to a Node.js errno-style exception. */
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error;
 }
