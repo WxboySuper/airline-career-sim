@@ -132,7 +132,8 @@ const preliminaryCuratedAirportFixture = {
     competitorPresence: 20,
     region: "Iowa",
     marketGroup: "Sample City",
-    notes: "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: small_city.",
+    notes:
+      "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: small_city.",
     manualOverrides: ["local-airport-curator"]
   }
 } as const;
@@ -155,7 +156,10 @@ describe("airport data pipeline", () => {
   });
 
   it("loads raw airport fixtures from disk and normalizes them", async () => {
-    const fixturePath = join(await mkdtemp(join(tmpdir(), "airport-pipeline-")), "raw-airports.json");
+    const fixturePath = join(
+      await mkdtemp(join(tmpdir(), "airport-pipeline-")),
+      "raw-airports.json"
+    );
     await writeFile(fixturePath, `${JSON.stringify(rawAirportFixture, null, 2)}\n`, "utf8");
 
     const rawAirports = await loadRawAirportSourceFile(fixturePath);
@@ -173,7 +177,11 @@ describe("airport data pipeline", () => {
 
   it("loads preliminary curated airport fixtures from the development export shape", async () => {
     const fixturePath = join(await mkdtemp(join(tmpdir(), "airport-pipeline-")), "airports.json");
-    await writeFile(fixturePath, `${JSON.stringify(preliminaryCuratedAirportFixture, null, 2)}\n`, "utf8");
+    await writeFile(
+      fixturePath,
+      `${JSON.stringify(preliminaryCuratedAirportFixture, null, 2)}\n`,
+      "utf8"
+    );
 
     const result = await loadCuratedAirportExportFile(fixturePath);
 
@@ -272,7 +280,9 @@ describe("airport data pipeline", () => {
 
   it("filters deferred airports by default and includes them only when requested", () => {
     const defaultResult = buildAirportPipeline(rawAirportFixture, curatedAirportFixture);
-    const withDeferred = buildAirportPipeline(rawAirportFixture, curatedAirportFixture, { includeDeferred: true });
+    const withDeferred = buildAirportPipeline(rawAirportFixture, curatedAirportFixture, {
+      includeDeferred: true
+    });
 
     expect(defaultResult.diagnostics.deferredCount).toBe(1);
     expect(defaultResult.airports.some((airport) => airport.icao === "KBBB")).toBe(false);
@@ -324,7 +334,10 @@ describe("airport data pipeline", () => {
   });
 
   it("handles missing curated files gracefully", async () => {
-    const missingPath = join(await mkdtemp(join(tmpdir(), "airport-pipeline-")), "missing-reviewed-airports.json");
+    const missingPath = join(
+      await mkdtemp(join(tmpdir(), "airport-pipeline-")),
+      "missing-reviewed-airports.json"
+    );
 
     const result = await loadCuratedAirportExportFile(missingPath);
 

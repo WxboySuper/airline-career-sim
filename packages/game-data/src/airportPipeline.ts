@@ -20,7 +20,14 @@ export const curationStatuses = [
 ] as const;
 export type AirportCurationStatus = (typeof curationStatuses)[number];
 
-export const airportScaleValues = ["airstrip", "community", "regional", "metro", "major", "global_gateway"] as const;
+export const airportScaleValues = [
+  "airstrip",
+  "community",
+  "regional",
+  "metro",
+  "major",
+  "global_gateway"
+] as const;
 export type CuratedAirportScale = (typeof airportScaleValues)[number];
 
 export const airportUseTypeValues = [
@@ -36,7 +43,14 @@ export const airportUseTypeValues = [
 ] as const;
 export type CuratedAirportUseType = (typeof airportUseTypeValues)[number];
 
-export const curatedRunwayClassValues = ["tiny", "small", "medium", "large", "heavy", "unknown"] as const;
+export const curatedRunwayClassValues = [
+  "tiny",
+  "small",
+  "medium",
+  "large",
+  "heavy",
+  "unknown"
+] as const;
 export type CuratedRunwayClass = (typeof curatedRunwayClassValues)[number];
 
 export const terrainContextValues = [
@@ -52,7 +66,14 @@ export const terrainContextValues = [
 ] as const;
 export type TerrainContext = (typeof terrainContextValues)[number];
 
-export const remotenessValues = ["urban", "suburban", "small_city", "rural", "remote", "isolated"] as const;
+export const remotenessValues = [
+  "urban",
+  "suburban",
+  "small_city",
+  "rural",
+  "remote",
+  "isolated"
+] as const;
 export type AirportRemoteness = (typeof remotenessValues)[number];
 
 export interface RawAirportSourceRecord {
@@ -272,19 +293,54 @@ export function validateCuratedAirportExport(input: unknown): {
     const record = normalizeCuratedAirportRecord(value as Record<string, unknown>);
     const validated: CuratedAirportExportRecord = {};
     copyString(record, validated as MutableRecord, "icao");
-    copyEnum(record, validated as MutableRecord, "airportScale", airportScaleValues, code, diagnostics);
-    copyEnum(record, validated as MutableRecord, "airportUseType", airportUseTypeValues, code, diagnostics);
+    copyEnum(
+      record,
+      validated as MutableRecord,
+      "airportScale",
+      airportScaleValues,
+      code,
+      diagnostics
+    );
+    copyEnum(
+      record,
+      validated as MutableRecord,
+      "airportUseType",
+      airportUseTypeValues,
+      code,
+      diagnostics
+    );
     copyBoolean(record, validated as MutableRecord, "hasCommercialService", code, diagnostics);
     copyBoolean(record, validated as MutableRecord, "hasInternationalService", code, diagnostics);
     copyBoolean(record, validated as MutableRecord, "isCargoRelevant", code, diagnostics);
     copyBoolean(record, validated as MutableRecord, "isMilitary", code, diagnostics);
-    copyEnum(record, validated as MutableRecord, "runwayClass", curatedRunwayClassValues, code, diagnostics);
-    copyEnum(record, validated as MutableRecord, "terrainContext", terrainContextValues, code, diagnostics);
+    copyEnum(
+      record,
+      validated as MutableRecord,
+      "runwayClass",
+      curatedRunwayClassValues,
+      code,
+      diagnostics
+    );
+    copyEnum(
+      record,
+      validated as MutableRecord,
+      "terrainContext",
+      terrainContextValues,
+      code,
+      diagnostics
+    );
     copyEnum(record, validated as MutableRecord, "remoteness", remotenessValues, code, diagnostics);
     copyString(record, validated as MutableRecord, "marketArea");
     copyString(record, validated as MutableRecord, "notes");
     copyStringArray(record, validated as MutableRecord, "researchUrls", code, diagnostics);
-    copyEnum(record, validated as MutableRecord, "curationStatus", curationStatuses, code, diagnostics);
+    copyEnum(
+      record,
+      validated as MutableRecord,
+      "curationStatus",
+      curationStatuses,
+      code,
+      diagnostics
+    );
     copyString(record, validated as MutableRecord, "lastReviewedAt");
     copyString(record, validated as MutableRecord, "excludedReason");
     copyString(record, validated as MutableRecord, "deferReason");
@@ -343,7 +399,13 @@ function mapPreliminaryRunwayClass(value: string | undefined): CuratedRunwayClas
   if (value === "mainline") {
     return "large";
   }
-  if (value === "heavy" || value === "tiny" || value === "small" || value === "medium" || value === "large") {
+  if (
+    value === "heavy" ||
+    value === "tiny" ||
+    value === "small" ||
+    value === "medium" ||
+    value === "large"
+  ) {
     return value;
   }
   return undefined;
@@ -472,8 +534,14 @@ export async function buildAirportPipelineFromFiles(
   });
 }
 
+<<<<<<< HEAD
 /** Returns broad aircraft-tier support flags for a curated runway class. */
 export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefined): AppAirportRecord["flags"] {
+=======
+export function getRunwayCapabilities(
+  runwayClass: CuratedRunwayClass | undefined
+): AppAirportRecord["flags"] {
+>>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const supportsFounderAircraft =
     runwayClass === "tiny" ||
     runwayClass === "small" ||
@@ -481,8 +549,12 @@ export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefine
     runwayClass === "large" ||
     runwayClass === "heavy";
   const supportsCommuterAircraft =
-    runwayClass === "small" || runwayClass === "medium" || runwayClass === "large" || runwayClass === "heavy";
-  const supportsRegionalAircraft = runwayClass === "medium" || runwayClass === "large" || runwayClass === "heavy";
+    runwayClass === "small" ||
+    runwayClass === "medium" ||
+    runwayClass === "large" ||
+    runwayClass === "heavy";
+  const supportsRegionalAircraft =
+    runwayClass === "medium" || runwayClass === "large" || runwayClass === "heavy";
   const supportsHeavyAircraft = runwayClass === "heavy";
   return {
     isPlayable: false,
@@ -497,8 +569,16 @@ export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefine
   };
 }
 
+<<<<<<< HEAD
 /** Combines a raw airport and curated gameplay data into the app airport record shape. */
 function toAppAirportRecord(raw: RawAirportEntry, curated: CuratedAirportExportRecord, id: AirportId): AppAirportRecord {
+=======
+function toAppAirportRecord(
+  raw: RawAirportEntry,
+  curated: CuratedAirportExportRecord,
+  id: AirportId
+): AppAirportRecord {
+>>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const status = curated.curationStatus ?? "unreviewed";
   const runwayCapabilities = getRunwayCapabilities(curated.runwayClass);
   const isExcluded = status === "excluded";
@@ -544,7 +624,10 @@ function normalizeRawAirportRecord(code: string, value: unknown): Partial<RawAir
     return {};
   }
   const record = value as RawAirportSourceRecord;
-  const iata = typeof record.iata === "string" && record.iata.trim() ? record.iata.trim().toUpperCase() : undefined;
+  const iata =
+    typeof record.iata === "string" && record.iata.trim()
+      ? record.iata.trim().toUpperCase()
+      : undefined;
   return {
     icao: stringOrFallback(record.icao, code).toUpperCase(),
     iata,
@@ -570,8 +653,15 @@ function missingRequiredFields(curated: CuratedAirportExportRecord | undefined):
   });
 }
 
+<<<<<<< HEAD
 /** Explains why an airport status is skipped under the current pipeline options. */
 function skipReasonForStatus(status: AirportCurationStatus, options: AirportPipelineOptions): string | undefined {
+=======
+function skipReasonForStatus(
+  status: AirportCurationStatus,
+  options: AirportPipelineOptions
+): string | undefined {
+>>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   if (status === "reviewed") {
     return undefined;
   }
@@ -604,12 +694,16 @@ function stableAirportId(icao: string): AirportId {
 
 type MutableRecord = Record<string, unknown>;
 
+<<<<<<< HEAD
 /** Copies a non-empty string field into a validated mutable record. */
 function copyString(
   record: Record<string, unknown>,
   target: MutableRecord,
   field: string
 ): void {
+=======
+function copyString(record: Record<string, unknown>, target: MutableRecord, field: string): void {
+>>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const value = record[field];
   if (typeof value === "string" && value.trim()) {
     target[field] = value.trim();
