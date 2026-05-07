@@ -10,6 +10,20 @@ The raw airport file should not be treated as fully gameplay-ready. It includes 
 
 The game should use a curated or generated gameplay airport layer built from the raw data.
 
+## Airport Data Pipeline
+
+The app-side airport data pipeline lives in `packages/game-data`.
+
+The pipeline starts from the raw airport source shape in `data/airports.json`, normalizes raw records into the shared raw airport schema, and can merge those records with a future final curated export. The expected final curated export path is currently `data/curated/airports.us.reviewed.json`; this file may be absent during development.
+
+During development, callers may explicitly pass `data/curated/airports.json` as a preliminary curated airport file. This is a development convenience only. The final reviewed export path remains `data/curated/airports.us.reviewed.json`.
+
+The app pipeline must not depend on the local WIP SQLite curator database. Local curation tools can eventually produce a final reviewed export, but the game consumes the final export format rather than the work queue.
+
+By default, only reviewed, non-excluded airports become app-ready records. Partial, deferred, needs-research, excluded, and unreviewed airports are skipped unless a development option explicitly includes them. The pipeline reports diagnostics for missing raw records, invalid curated values, skipped statuses, missing required curated fields, duplicate airport IDs, and missing curated export files.
+
+Runway capability helpers are broad gameplay helpers, not exact aircraft certification rules. They should only answer whether an airport broadly supports founder, commuter, regional, or heavy aircraft tiers.
+
 ## Airport Design Goals
 
 Airports should:

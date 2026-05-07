@@ -2,6 +2,8 @@ export type DataModuleStatus = "foundation-ready";
 
 export const dataModuleStatus: DataModuleStatus = "foundation-ready";
 
+export * from "./airportPipeline";
+
 export const sampleSimulationPaces = [
   {
     id: "standard",
