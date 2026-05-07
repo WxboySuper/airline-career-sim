@@ -216,9 +216,12 @@ const requiredReviewedFields = [
 ] as const;
 
 /** Loads and validates the raw airport source file. */
-export async function loadRawAirportSourceFile(filePath: string): Promise<RawAirportSource> {
+export async function loadRawAirportSourceFile(filePath: string): Promise<{
+  airports: RawAirportSource;
+  diagnostics: AirportPipelineDiagnostic[];
+}> {
   const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
-  return validateRawAirportSource(parsed).airports;
+  return validateRawAirportSource(parsed);
 }
 
 /** Loads and validates a curated airport export file, treating a missing file as an empty optional export. */
@@ -361,7 +364,7 @@ function normalizeCuratedAirportRecord(record: Record<string, unknown>): Record<
     ...record,
     airportScale: record.airportScale ?? mapPreliminaryAirportClass(preliminary.airportClass),
     airportUseType: record.airportUseType ?? extractLabeledNoteValue(preliminary.notes, "Use type"),
-    runwayClass: mapPreliminaryRunwayClass(preliminary.runwayClass) ?? record.runwayClass,
+    runwayClass: normalizePreliminaryRunwayClass(record.runwayClass, preliminary.runwayClass),
     terrainContext: record.terrainContext ?? extractLabeledNoteValue(preliminary.notes, "Terrain"),
     remoteness: record.remoteness ?? extractLabeledNoteValue(preliminary.notes, "Remoteness"),
     marketArea: record.marketArea ?? preliminary.marketGroup,
@@ -389,6 +392,20 @@ function mapPreliminaryAirportClass(value: string | undefined): CuratedAirportSc
     return value;
   }
   return undefined;
+}
+
+/** Preserves canonical runway values while mapping preliminary runway labels. */
+function normalizePreliminaryRunwayClass(
+  recordValue: unknown,
+  preliminaryValue: string | undefined
+): CuratedRunwayClass | unknown {
+  if (
+    typeof recordValue === "string" &&
+    (curatedRunwayClassValues as readonly string[]).includes(recordValue)
+  ) {
+    return recordValue;
+  }
+  return mapPreliminaryRunwayClass(preliminaryValue);
 }
 
 /** Maps preliminary runway classes into broad runway capability classes. */
@@ -495,6 +512,7 @@ export function buildAirportPipelineFromValidated(
           message: `Reviewed airport is missing required curated field ${field}.`
         }))
       );
+      continue;
     }
 
     const skipReason = skipReasonForStatus(status, options);
@@ -525,10 +543,11 @@ export async function buildAirportPipelineFromFiles(
   curatedAirportPath = defaultReviewedAirportExportPath,
   options: AirportPipelineOptions = {}
 ): Promise<AirportPipelineResult> {
-  const rawAirports = await loadRawAirportSourceFile(rawAirportPath);
+  const raw = await loadRawAirportSourceFile(rawAirportPath);
   const curated = await loadCuratedAirportExportFile(curatedAirportPath);
-  return buildAirportPipelineFromValidated(rawAirports, curated.airports, {
+  return buildAirportPipelineFromValidated(raw.airports, curated.airports, {
     ...options,
+    rawDiagnostics: raw.diagnostics,
     curatedDiagnostics: curated.diagnostics,
     missingCuratedFile: curated.missing
   });

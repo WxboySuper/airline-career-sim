@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -14,6 +15,13 @@ import {
   validateCuratedAirportExport,
   validateRawAirportSource
 } from "./airportPipeline";
+
+const testDirectory = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(testDirectory, "../../..");
+const preliminaryCuratedAirportExportPath = resolve(
+  repositoryRoot,
+  defaultPreliminaryCuratedAirportExportPath
+);
 
 const rawAirportFixture = {
   KAAA: {
@@ -162,9 +170,43 @@ describe("airport data pipeline", () => {
     );
     await writeFile(fixturePath, `${JSON.stringify(rawAirportFixture, null, 2)}\n`, "utf8");
 
-    const rawAirports = await loadRawAirportSourceFile(fixturePath);
+    const result = await loadRawAirportSourceFile(fixturePath);
 
-    expect(rawAirports.KAAA?.name).toBe("Sample Regional Airport");
+    expect(result.diagnostics).toEqual([]);
+    expect(result.airports.KAAA?.name).toBe("Sample Regional Airport");
+  });
+
+  it("keeps raw file diagnostics when loading the pipeline from files", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "airport-pipeline-"));
+    const rawPath = join(dir, "raw-airports.json");
+    const curatedPath = join(dir, "airports.us.reviewed.json");
+    await writeFile(
+      rawPath,
+      `${JSON.stringify(
+        {
+          KAAA: rawAirportFixture.KAAA,
+          KBAD: {
+            icao: "KBAD",
+            name: "Broken Raw Airport"
+          }
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+    await writeFile(
+      curatedPath,
+      `${JSON.stringify({ KAAA: reviewedCuratedRecord }, null, 2)}\n`,
+      "utf8"
+    );
+
+    const result = await buildAirportPipelineFromFiles(rawPath, curatedPath);
+
+    expect(result.airports).toHaveLength(1);
+    expect(result.diagnostics.invalidRawRecords).toContainEqual(
+      expect.objectContaining({ code: "KBAD" })
+    );
   });
 
   it("loads and validates curated airport fixtures", () => {
@@ -198,6 +240,18 @@ describe("airport data pipeline", () => {
         curationStatus: "partial"
       })
     );
+  });
+
+  it("preserves canonical runway class when normalizing preliminary curated records", () => {
+    const result = validateCuratedAirportExport({
+      KAAA: {
+        ...preliminaryCuratedAirportFixture.KAAA,
+        runwayClass: "large"
+      }
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.airports.KAAA?.runwayClass).toBe("large");
   });
 
   it("produces diagnostics for invalid curated enum values", () => {
@@ -362,6 +416,12 @@ describe("airport data pipeline", () => {
         field: "marketArea"
       })
     );
+    expect(result.diagnostics.airportsSkippedDueToStatus).not.toContainEqual(
+      expect.objectContaining({
+        code: "KAAA",
+        reason: "Airport is missing required curated fields."
+      })
+    );
     expect(result.airports).toHaveLength(0);
   });
 
@@ -379,10 +439,10 @@ describe("airport data pipeline", () => {
     expect(result.diagnostics.missingCuratedFile).toBe(true);
   });
 
-  const maybeIt = existsSync(defaultPreliminaryCuratedAirportExportPath) ? it : it.skip;
+  const maybeIt = existsSync(preliminaryCuratedAirportExportPath) ? it : it.skip;
 
   maybeIt("validates the current preliminary curated airport file when present", async () => {
-    const result = await loadCuratedAirportExportFile(defaultPreliminaryCuratedAirportExportPath);
+    const result = await loadCuratedAirportExportFile(preliminaryCuratedAirportExportPath);
 
     expect(result.missing).toBe(false);
     expect(result.diagnostics).toEqual([]);
