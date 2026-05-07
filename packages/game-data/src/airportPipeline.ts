@@ -534,14 +534,8 @@ export async function buildAirportPipelineFromFiles(
   });
 }
 
-<<<<<<< HEAD
 /** Returns broad aircraft-tier support flags for a curated runway class. */
 export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefined): AppAirportRecord["flags"] {
-=======
-export function getRunwayCapabilities(
-  runwayClass: CuratedRunwayClass | undefined
-): AppAirportRecord["flags"] {
->>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const supportsFounderAircraft =
     runwayClass === "tiny" ||
     runwayClass === "small" ||
@@ -569,16 +563,8 @@ export function getRunwayCapabilities(
   };
 }
 
-<<<<<<< HEAD
 /** Combines a raw airport and curated gameplay data into the app airport record shape. */
 function toAppAirportRecord(raw: RawAirportEntry, curated: CuratedAirportExportRecord, id: AirportId): AppAirportRecord {
-=======
-function toAppAirportRecord(
-  raw: RawAirportEntry,
-  curated: CuratedAirportExportRecord,
-  id: AirportId
-): AppAirportRecord {
->>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const status = curated.curationStatus ?? "unreviewed";
   const runwayCapabilities = getRunwayCapabilities(curated.runwayClass);
   const isExcluded = status === "excluded";
@@ -653,15 +639,8 @@ function missingRequiredFields(curated: CuratedAirportExportRecord | undefined):
   });
 }
 
-<<<<<<< HEAD
 /** Explains why an airport status is skipped under the current pipeline options. */
 function skipReasonForStatus(status: AirportCurationStatus, options: AirportPipelineOptions): string | undefined {
-=======
-function skipReasonForStatus(
-  status: AirportCurationStatus,
-  options: AirportPipelineOptions
-): string | undefined {
->>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   if (status === "reviewed") {
     return undefined;
   }
@@ -694,16 +673,12 @@ function stableAirportId(icao: string): AirportId {
 
 type MutableRecord = Record<string, unknown>;
 
-<<<<<<< HEAD
 /** Copies a non-empty string field into a validated mutable record. */
 function copyString(
   record: Record<string, unknown>,
   target: MutableRecord,
   field: string
 ): void {
-=======
-function copyString(record: Record<string, unknown>, target: MutableRecord, field: string): void {
->>>>>>> 4617dee5cab79b241142d5292b6b165d758ab12a
   const value = record[field];
   if (typeof value === "string" && value.trim()) {
     target[field] = value.trim();
