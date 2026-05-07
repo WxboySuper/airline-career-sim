@@ -8,6 +8,9 @@
     "rootDir": "src",
     "lib": ["ES2022"],
     "types": ["node", "vitest/globals"],
+    "paths": {
+      "@airline-career-sim/shared": ["../shared/dist/index.d.ts"]
+    },
     "noEmit": false
   },
   "include": ["src"],
