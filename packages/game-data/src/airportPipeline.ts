@@ -535,7 +535,9 @@ export async function buildAirportPipelineFromFiles(
 }
 
 /** Returns broad aircraft-tier support flags for a curated runway class. */
-export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefined): AppAirportRecord["flags"] {
+export function getRunwayCapabilities(
+  runwayClass: CuratedRunwayClass | undefined
+): AppAirportRecord["flags"] {
   const supportsFounderAircraft =
     runwayClass === "tiny" ||
     runwayClass === "small" ||
@@ -564,7 +566,11 @@ export function getRunwayCapabilities(runwayClass: CuratedRunwayClass | undefine
 }
 
 /** Combines a raw airport and curated gameplay data into the app airport record shape. */
-function toAppAirportRecord(raw: RawAirportEntry, curated: CuratedAirportExportRecord, id: AirportId): AppAirportRecord {
+function toAppAirportRecord(
+  raw: RawAirportEntry,
+  curated: CuratedAirportExportRecord,
+  id: AirportId
+): AppAirportRecord {
   const status = curated.curationStatus ?? "unreviewed";
   const runwayCapabilities = getRunwayCapabilities(curated.runwayClass);
   const isExcluded = status === "excluded";
@@ -640,7 +646,10 @@ function missingRequiredFields(curated: CuratedAirportExportRecord | undefined):
 }
 
 /** Explains why an airport status is skipped under the current pipeline options. */
-function skipReasonForStatus(status: AirportCurationStatus, options: AirportPipelineOptions): string | undefined {
+function skipReasonForStatus(
+  status: AirportCurationStatus,
+  options: AirportPipelineOptions
+): string | undefined {
   if (status === "reviewed") {
     return undefined;
   }
@@ -674,11 +683,7 @@ function stableAirportId(icao: string): AirportId {
 type MutableRecord = Record<string, unknown>;
 
 /** Copies a non-empty string field into a validated mutable record. */
-function copyString(
-  record: Record<string, unknown>,
-  target: MutableRecord,
-  field: string
-): void {
+function copyString(record: Record<string, unknown>, target: MutableRecord, field: string): void {
   const value = record[field];
   if (typeof value === "string" && value.trim()) {
     target[field] = value.trim();
