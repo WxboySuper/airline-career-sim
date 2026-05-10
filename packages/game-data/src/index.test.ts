@@ -14,6 +14,8 @@ import {
 } from "@airline-career-sim/shared";
 
 import {
+  aircraftManufacturers,
+  aircraftTypes,
   sampleAircraft,
   sampleAircraftTypes,
   sampleContracts,
@@ -72,6 +74,75 @@ describe("sample game data", () => {
     for (const message of sampleInboxMessages) {
       expect(() => inboxMessageSchema.parse(message)).not.toThrow();
     }
+  });
+
+  it("validates the manufacturer catalog", () => {
+    expect(aircraftManufacturers.map((manufacturer) => manufacturer.name)).toEqual([
+      "Aster Aviation",
+      "Kestrel Aircraft Works",
+      "Hawthorne Aeronautics",
+      "Vela Aerospace"
+    ]);
+
+    for (const manufacturer of aircraftManufacturers) {
+      expect(() => aircraftManufacturerSchema.parse(manufacturer)).not.toThrow();
+    }
+  });
+
+  it("validates the Version 1.0 aircraft catalog", () => {
+    expect(aircraftTypes.map((aircraftType) => aircraftType.name)).toEqual([
+      "Aster A-8 Courier",
+      "Kestrel K-10 Trail",
+      "Aster A-19 Commuter",
+      "Kestrel K-19 Harbor",
+      "Kestrel K-32 Range",
+      "Vela V-34 Nova",
+      "Kestrel K-52 Mesa",
+      "Hawthorne H-56 Connector",
+      "Aster AJ-44 Swift",
+      "Hawthorne HJ-48 Link",
+      "Hawthorne HJ-72 Bridge",
+      "Vela VJ-86 Arc"
+    ]);
+
+    for (const aircraftType of aircraftTypes) {
+      expect(() => aircraftTypeSchema.parse(aircraftType)).not.toThrow();
+    }
+  });
+
+  it("has two aircraft per early Version 1.0 category", () => {
+    const categoryCounts = aircraftTypes.reduce<Record<string, number>>((counts, aircraftType) => {
+      counts[aircraftType.category] = (counts[aircraftType.category] ?? 0) + 1;
+      return counts;
+    }, {});
+
+    expect(categoryCounts).toMatchObject({
+      founder: 2,
+      commuter: 2,
+      "small-regional-turboprop": 2,
+      "large-regional-turboprop": 2,
+      "small-regional-jet": 2,
+      "large-regional-jet": 2
+    });
+  });
+
+  it("represents manufacturer lore through distinct behavioral tradeoffs", () => {
+    const hawthorneJet = aircraftTypes.find((a) => a.id === "aircraft-type:hawthorne-hj48-link");
+    const asterJet = aircraftTypes.find((a) => a.id === "aircraft-type:aster-aj44-swift");
+    const velaJet = aircraftTypes.find((a) => a.id === "aircraft-type:vela-vj86-arc");
+
+    // Hawthorne: Premium pricing, high comfort, partner-ready
+    expect(hawthorneJet?.purchasePrice).toBeGreaterThan(asterJet?.purchasePrice ?? 0);
+    expect(hawthorneJet?.comfortRating).toBeGreaterThan(asterJet?.comfortRating ?? 0);
+    expect(hawthorneJet?.partnerCompatibility).toBe("preferred");
+
+    // Aster: Budget, lower comfort
+    expect(asterJet?.purchasePrice).toBeLessThan(velaJet?.purchasePrice ?? 0);
+    expect(asterJet?.comfortRating).toBeLessThan(velaJet?.comfortRating ?? 0);
+
+    // Vela: Efficient, high capacity, modern
+    expect(velaJet?.capacity).toBeGreaterThan(hawthorneJet?.capacity ?? 0);
+    expect(velaJet?.deliveryTimeDays).toBeGreaterThan(hawthorneJet?.deliveryTimeDays ?? 0);
   });
 
   it("serializes and deserializes the sample save game", () => {

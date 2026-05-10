@@ -265,7 +265,7 @@ export function validateRawAirportSource(input: unknown): {
     } else {
       diagnostics.push({
         code,
-        message: `Invalid raw airport record: ${result.error.issues.map((issue) => issue.message).join("; ")}`
+        message: `Invalid raw airport record: ${result.error.issues.map((issue: { message: string }) => issue.message).join("; ")}`
       });
     }
   }

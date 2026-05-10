@@ -11,22 +11,22 @@ export type Brand<TValue, TBrand extends string> = TValue & {
   readonly __brand: TBrand;
 };
 
-export type UserId = Brand<string, "UserId">;
-export type AirlineId = Brand<string, "AirlineId">;
-export type AirportId = Brand<string, "AirportId">;
-export type AircraftManufacturerId = Brand<string, "AircraftManufacturerId">;
-export type AircraftTypeId = Brand<string, "AircraftTypeId">;
-export type AircraftInstanceId = Brand<string, "AircraftInstanceId">;
-export type RouteId = Brand<string, "RouteId">;
-export type ScheduleId = Brand<string, "ScheduleId">;
-export type FlightId = Brand<string, "FlightId">;
-export type ContractId = Brand<string, "ContractId">;
-export type ObjectiveId = Brand<string, "ObjectiveId">;
-export type ObjectiveProgressId = Brand<string, "ObjectiveProgressId">;
-export type InboxMessageId = Brand<string, "InboxMessageId">;
-export type ReportId = Brand<string, "ReportId">;
-export type SaveId = Brand<string, "SaveId">;
-export type FeatureUnlockId = Brand<string, "FeatureUnlockId">;
+export type UserId = z.infer<typeof userIdSchema>;
+export type AirlineId = z.infer<typeof airlineIdSchema>;
+export type AirportId = z.infer<typeof airportIdSchema>;
+export type AircraftManufacturerId = z.infer<typeof aircraftManufacturerIdSchema>;
+export type AircraftTypeId = z.infer<typeof aircraftTypeIdSchema>;
+export type AircraftInstanceId = z.infer<typeof aircraftInstanceIdSchema>;
+export type RouteId = z.infer<typeof routeIdSchema>;
+export type ScheduleId = z.infer<typeof scheduleIdSchema>;
+export type FlightId = z.infer<typeof flightIdSchema>;
+export type ContractId = z.infer<typeof contractIdSchema>;
+export type ObjectiveId = z.infer<typeof objectiveIdSchema>;
+export type ObjectiveProgressId = z.infer<typeof objectiveProgressIdSchema>;
+export type InboxMessageId = z.infer<typeof inboxMessageIdSchema>;
+export type ReportId = z.infer<typeof reportIdSchema>;
+export type SaveId = z.infer<typeof saveIdSchema>;
+export type FeatureUnlockId = z.infer<typeof featureUnlockIdSchema>;
 
 /**
  * Creates a Zod schema for a branded string ID with a specific prefix.
@@ -197,6 +197,27 @@ export const aircraftTypeSchema = z.object({
   monthlyLeasePrice: positiveMoneySchema,
   deliveryTimeDays: z.number().int().nonnegative(),
   partnerCompatibility: partnerCompatibilitySchema,
+  /** Whether the aircraft is legally or operationally permitted for ACT 1 operations. */
+  act1Allowed: z.boolean().default(false),
+  /** Flag for starter/introductory aircraft available at the beginning of the game. */
+  starterAircraft: z.boolean().default(false),
+  /**
+   * Initial physical state and wear-and-tear profile for starter aircraft.
+   * - `ageYears` / `flightHours`: Non-negative numbers.
+   * - `cycles`: Non-negative integer.
+   * - `condition` / `cabinCondition`: References {@link scoreSchema} (0-100).
+   * - `reliabilityModifier`: Integer offset between -50 and 50.
+   */
+  starterProfile: z
+    .object({
+      ageYears: z.number().nonnegative(),
+      flightHours: z.number().nonnegative(),
+      cycles: z.number().int().nonnegative(),
+      condition: scoreSchema,
+      cabinCondition: scoreSchema,
+      reliabilityModifier: z.number().int().min(-50).max(50)
+    })
+    .optional(),
   notes: z.string().optional()
 });
 export type AircraftType = z.infer<typeof aircraftTypeSchema>;
@@ -212,6 +233,42 @@ export const acquisitionTypeSchema = z.enum([
   "partner-financed"
 ]);
 export type AcquisitionType = z.infer<typeof acquisitionTypeSchema>;
+
+/**
+ * Schema for aircraft acquisition options.
+ *
+ * Models the various ways an aircraft can be acquired (purchase, lease, partner-financed, etc.).
+ * Describes key fields and their relationships:
+ * - `legalOwner`: Who legally owns the aircraft (player, lessor, or partner).
+ * - `paymentResponsibleParty`: Who is responsible for monthly payments.
+ * - `operationalControl`: Who has control over scheduling and operations.
+ * - `partnerId` / `partnerContractId`: References for partner-connected ownership.
+ * - `restrictedToContractIds`: List of contract IDs the aircraft is restricted to (defaults to []).
+ * - `canBeRetainedAfterSeparation`: Whether the player keeps the aircraft after partner separation.
+ * - `mustReturnOnSeparation`: Whether the aircraft must be returned upon separation.
+ * - `buyoutPrice`: Optional cost to buy out a lease or partner share.
+ *
+ * Defines the {@link AcquisitionOption} type via `z.infer`.
+ */
+export const acquisitionOptionSchema = z.object({
+  acquisitionType: acquisitionTypeSchema,
+  upfrontCost: positiveMoneySchema,
+  monthlyPayment: positiveMoneySchema,
+  deliveryTimeDays: z.number().int().nonnegative(),
+  condition: scoreSchema.optional(),
+  cabinCondition: scoreSchema.optional(),
+  reliabilityModifier: z.number().int().min(-50).max(50).optional(),
+  legalOwner: z.enum(["player-airline", "lessor", "partner-airline"]),
+  paymentResponsibleParty: z.enum(["player-airline", "partner-airline", "shared", "none"]),
+  operationalControl: z.enum(["player-airline", "partner-airline", "shared"]),
+  partnerId: z.string().min(1).optional(),
+  partnerContractId: contractIdSchema.optional(),
+  restrictedToContractIds: z.array(contractIdSchema).default([]),
+  canBeRetainedAfterSeparation: z.boolean(),
+  buyoutPrice: positiveMoneySchema.optional(),
+  mustReturnOnSeparation: z.boolean()
+});
+export type AcquisitionOption = z.infer<typeof acquisitionOptionSchema>;
 
 export const ownershipControlSchema = z.object({
   acquisitionType: acquisitionTypeSchema,

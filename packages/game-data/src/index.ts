@@ -93,30 +93,102 @@ export const curatedAirportStubs = [
   }
 ];
 
-export const sampleManufacturers = [
+/**
+ * Catalog of fictional aircraft manufacturers.
+ * Each manufacturer has a distinct design philosophy, strengths, weaknesses, and cost/reliability profiles.
+ *
+ * @type {readonly {
+ *   id: string,
+ *   name: string,
+ *   designPhilosophy: string,
+ *   strengthTags: string[],
+ *   weaknessTags: string[],
+ *   supportQuality: number,
+ *   typicalCostProfile: "budget" | "balanced" | "premium",
+ *   typicalReliabilityProfile: "fragile" | "standard" | "rugged"
+ * }[]}
+ */
+export const aircraftManufacturers = [
   {
     id: "manufacturer:aster",
     name: "Aster Aviation",
-    designPhilosophy: "Low acquisition cost and simple systems for tiny operators.",
-    strengthTags: ["affordable", "easy-to-source"],
-    weaknessTags: ["basic-cabin", "moderate-reliability"],
+    designPhilosophy:
+      "Affordable, simple aircraft that help cash-starved founders get flying early.",
+    strengthTags: ["low-purchase-price", "simple-systems", "good-used-availability"],
+    weaknessTags: ["lower-comfort", "higher-condition-risk", "modest-support"],
     supportQuality: 58,
     typicalCostProfile: "budget",
-    typicalReliabilityProfile: "standard"
+    typicalReliabilityProfile: "fragile"
   },
   {
     id: "manufacturer:kestrel",
-    name: "Kestrel Works",
-    designPhilosophy: "Rugged short-field aircraft with conservative operating economics.",
-    strengthTags: ["rugged", "short-field"],
-    weaknessTags: ["slower", "higher-upfront-cost"],
+    name: "Kestrel Aircraft Works",
+    designPhilosophy:
+      "Rugged aircraft for small airports, conservative operators, and difficult early routes.",
+    strengthTags: ["rugged", "short-field", "strong-reliability"],
+    weaknessTags: ["slower", "higher-upfront-cost", "plain-cabins"],
     supportQuality: 72,
     typicalCostProfile: "balanced",
     typicalReliabilityProfile: "rugged"
+  },
+  {
+    id: "manufacturer:hawthorne",
+    name: "Hawthorne Aeronautics",
+    designPhilosophy:
+      "Polished regional aircraft with strong passenger appeal and partner-airline credibility.",
+    strengthTags: ["comfort", "partner-ready", "support-network"],
+    weaknessTags: ["premium-pricing", "higher-lease-pressure"],
+    supportQuality: 84,
+    typicalCostProfile: "premium",
+    typicalReliabilityProfile: "standard"
+  },
+  {
+    id: "manufacturer:vela",
+    name: "Vela Aerospace",
+    designPhilosophy:
+      "Modern efficient aircraft with good range and operating economics, but newer support risks.",
+    strengthTags: ["efficient", "longer-range", "modern-cabins"],
+    weaknessTags: ["delivery-waits", "newer-support-network"],
+    supportQuality: 68,
+    typicalCostProfile: "balanced",
+    typicalReliabilityProfile: "standard"
   }
 ];
 
-export const sampleAircraftTypes = [
+/**
+ * Canonical catalog of aircraft types available in the game.
+ *
+ * Each entry defines the technical specifications, economic profiles, and gameplay roles
+ * for a specific aircraft model.
+ *
+ * Object Properties:
+ * - `id`: Branded unique identifier for the aircraft type.
+ * - `manufacturerId`: Reference to the manufacturer catalog.
+ * - `name`: Display name of the aircraft.
+ * - `modelCode`: Technical ICAO-style model code.
+ * - `category`: Gameplay tier (e.g., founder, commuter, regional-jet).
+ * - `family`: Family grouping for maintenance and training commonality.
+ * - `capacity`: Passenger seating capacity.
+ * - `rangeNm`: Operational range in nautical miles.
+ * - `cruiseSpeedKtas: Speed in knots true airspeed.
+ * - `fuelBurnRating`: Relative fuel efficiency score.
+ * - `operatingCostRating`: Relative hourly operating cost score.
+ * - `maintenanceCostRating`: Relative maintenance cost score.
+ * - `reliabilityRating`: Base reliability score.
+ * - `comfortRating`: Passenger comfort/cabin quality score.
+ * - `cargoStorageRating`: Relative cargo/baggage capacity score.
+ * - `airportRunwayRequirement`: Minimum {@link RunwayClass} required.
+ * - `turnTimeMinutes`: Minimum ground time required between flights.
+ * - `purchasePrice`: Cost to buy new in game currency.
+ * - `monthlyLeasePrice`: Base monthly cost for an operating lease.
+ * - `deliveryTimeDays`: Wait time for new aircraft delivery.
+ * - `partnerCompatibility`: Eligibility for partner-airline operations.
+ * - `notes`: Flavor text and gameplay tips.
+ * - `act1Allowed`: (Optional) Whether available during the founder phase.
+ * - `starterAircraft`: (Optional) Whether selectable as a starting airframe.
+ * - `starterProfile`: (Optional) Pre-defined wear-and-tear for starting instances.
+ */
+export const aircraftTypes = [
   {
     id: "aircraft-type:aster-a8-courier",
     manufacturerId: "manufacturer:aster",
@@ -139,7 +211,17 @@ export const sampleAircraftTypes = [
     monthlyLeasePrice: 8500,
     deliveryTimeDays: 0,
     partnerCompatibility: "none",
-    notes: "Cheap starter aircraft with little room for mistakes."
+    notes: "Cheap starter aircraft with little room for mistakes.",
+    act1Allowed: true,
+    starterAircraft: true,
+    starterProfile: {
+      ageYears: 12,
+      flightHours: 3200,
+      cycles: 1850,
+      condition: 78,
+      cabinCondition: 62,
+      reliabilityModifier: -5
+    }
   },
   {
     id: "aircraft-type:kestrel-k10-trail",
@@ -163,9 +245,273 @@ export const sampleAircraftTypes = [
     monthlyLeasePrice: 11200,
     deliveryTimeDays: 0,
     partnerCompatibility: "eligible",
-    notes: "More expensive starter aircraft with rugged airport performance."
+    notes: "More expensive starter aircraft with rugged airport performance.",
+    act1Allowed: true,
+    starterAircraft: true,
+    starterProfile: {
+      ageYears: 8,
+      flightHours: 2400,
+      cycles: 1500,
+      condition: 86,
+      cabinCondition: 72,
+      reliabilityModifier: 2
+    }
+  },
+  {
+    id: "aircraft-type:aster-a19-commuter",
+    manufacturerId: "manufacturer:aster",
+    name: "Aster A-19 Commuter",
+    modelCode: "A-19",
+    category: "commuter",
+    family: "Aster commuter",
+    capacity: 19,
+    rangeNm: 430,
+    cruiseSpeedKtas: 178,
+    fuelBurnRating: 66,
+    operatingCostRating: 74,
+    maintenanceCostRating: 58,
+    reliabilityRating: 58,
+    comfortRating: 42,
+    cargoStorageRating: 44,
+    airportRunwayRequirement: "standard",
+    turnTimeMinutes: 32,
+    purchasePrice: 1280000,
+    monthlyLeasePrice: 24500,
+    deliveryTimeDays: 35,
+    partnerCompatibility: "eligible",
+    notes: "Low-cost step into scheduled commuter service.",
+    act1Allowed: true
+  },
+  {
+    id: "aircraft-type:kestrel-k19-harbor",
+    manufacturerId: "manufacturer:kestrel",
+    name: "Kestrel K-19 Harbor",
+    modelCode: "K-19",
+    category: "commuter",
+    family: "Kestrel harbor",
+    capacity: 19,
+    rangeNm: 390,
+    cruiseSpeedKtas: 168,
+    fuelBurnRating: 61,
+    operatingCostRating: 68,
+    maintenanceCostRating: 70,
+    reliabilityRating: 74,
+    comfortRating: 45,
+    cargoStorageRating: 56,
+    airportRunwayRequirement: "short",
+    turnTimeMinutes: 34,
+    purchasePrice: 1520000,
+    monthlyLeasePrice: 28600,
+    deliveryTimeDays: 42,
+    partnerCompatibility: "eligible",
+    notes: "Rugged commuter aircraft for thin routes and rougher airports.",
+    act1Allowed: true
+  },
+  {
+    id: "aircraft-type:kestrel-k32-range",
+    manufacturerId: "manufacturer:kestrel",
+    name: "Kestrel K-32 Range",
+    modelCode: "K-32",
+    category: "small-regional-turboprop",
+    family: "Kestrel range",
+    capacity: 32,
+    rangeNm: 610,
+    cruiseSpeedKtas: 220,
+    fuelBurnRating: 63,
+    operatingCostRating: 66,
+    maintenanceCostRating: 72,
+    reliabilityRating: 76,
+    comfortRating: 52,
+    cargoStorageRating: 60,
+    airportRunwayRequirement: "standard",
+    turnTimeMinutes: 38,
+    purchasePrice: 4200000,
+    monthlyLeasePrice: 76000,
+    deliveryTimeDays: 70,
+    partnerCompatibility: "preferred",
+    notes: "Dependable small turboprop with enough range for early regional growth."
+  },
+  {
+    id: "aircraft-type:vela-v34-nova",
+    manufacturerId: "manufacturer:vela",
+    name: "Vela V-34 Nova",
+    modelCode: "V-34",
+    category: "small-regional-turboprop",
+    family: "Vela Nova",
+    capacity: 34,
+    rangeNm: 690,
+    cruiseSpeedKtas: 238,
+    fuelBurnRating: 74,
+    operatingCostRating: 72,
+    maintenanceCostRating: 62,
+    reliabilityRating: 68,
+    comfortRating: 58,
+    cargoStorageRating: 52,
+    airportRunwayRequirement: "regional",
+    turnTimeMinutes: 36,
+    purchasePrice: 4650000,
+    monthlyLeasePrice: 82000,
+    deliveryTimeDays: 95,
+    partnerCompatibility: "preferred",
+    notes: "Efficient and modern, but less forgiving at constrained airports."
+  },
+  {
+    id: "aircraft-type:kestrel-k52-mesa",
+    manufacturerId: "manufacturer:kestrel",
+    name: "Kestrel K-52 Mesa",
+    modelCode: "K-52",
+    category: "large-regional-turboprop",
+    family: "Kestrel mesa",
+    capacity: 52,
+    rangeNm: 760,
+    cruiseSpeedKtas: 252,
+    fuelBurnRating: 64,
+    operatingCostRating: 65,
+    maintenanceCostRating: 73,
+    reliabilityRating: 78,
+    comfortRating: 56,
+    cargoStorageRating: 66,
+    airportRunwayRequirement: "regional",
+    turnTimeMinutes: 42,
+    purchasePrice: 8500000,
+    monthlyLeasePrice: 142000,
+    deliveryTimeDays: 110,
+    partnerCompatibility: "preferred",
+    notes: "Workhorse feeder turboprop with strong reliability and cargo room."
+  },
+  {
+    id: "aircraft-type:hawthorne-h56-connector",
+    manufacturerId: "manufacturer:hawthorne",
+    name: "Hawthorne H-56 Connector",
+    modelCode: "H-56",
+    category: "large-regional-turboprop",
+    family: "Hawthorne Connector",
+    capacity: 56,
+    rangeNm: 720,
+    cruiseSpeedKtas: 266,
+    fuelBurnRating: 58,
+    operatingCostRating: 57,
+    maintenanceCostRating: 68,
+    reliabilityRating: 72,
+    comfortRating: 70,
+    cargoStorageRating: 54,
+    airportRunwayRequirement: "regional",
+    turnTimeMinutes: 40,
+    purchasePrice: 9700000,
+    monthlyLeasePrice: 166000,
+    deliveryTimeDays: 125,
+    partnerCompatibility: "preferred",
+    notes: "More comfortable partner-facing turboprop with higher cost pressure."
+  },
+  {
+    id: "aircraft-type:aster-aj44-swift",
+    manufacturerId: "manufacturer:aster",
+    name: "Aster AJ-44 Swift",
+    modelCode: "AJ-44",
+    category: "small-regional-jet",
+    family: "Aster Swift",
+    capacity: 44,
+    rangeNm: 980,
+    cruiseSpeedKtas: 420,
+    fuelBurnRating: 46,
+    operatingCostRating: 50,
+    maintenanceCostRating: 52,
+    reliabilityRating: 60,
+    comfortRating: 60,
+    cargoStorageRating: 40,
+    airportRunwayRequirement: "regional",
+    turnTimeMinutes: 44,
+    purchasePrice: 12300000,
+    monthlyLeasePrice: 214000,
+    deliveryTimeDays: 150,
+    partnerCompatibility: "eligible",
+    notes: "Lower-cost regional jet that trades polish for earlier jet access."
+  },
+  {
+    id: "aircraft-type:hawthorne-hj48-link",
+    manufacturerId: "manufacturer:hawthorne",
+    name: "Hawthorne HJ-48 Link",
+    modelCode: "HJ-48",
+    category: "small-regional-jet",
+    family: "Hawthorne Link",
+    capacity: 48,
+    rangeNm: 1050,
+    cruiseSpeedKtas: 438,
+    fuelBurnRating: 52,
+    operatingCostRating: 45,
+    maintenanceCostRating: 66,
+    reliabilityRating: 73,
+    comfortRating: 78,
+    cargoStorageRating: 45,
+    airportRunwayRequirement: "mainline",
+    turnTimeMinutes: 46,
+    purchasePrice: 14800000,
+    monthlyLeasePrice: 252000,
+    deliveryTimeDays: 165,
+    partnerCompatibility: "preferred",
+    notes: "Partner-friendly small jet with comfort and reliability advantages."
+  },
+  {
+    id: "aircraft-type:hawthorne-hj72-bridge",
+    manufacturerId: "manufacturer:hawthorne",
+    name: "Hawthorne HJ-72 Bridge",
+    modelCode: "HJ-72",
+    category: "large-regional-jet",
+    family: "Hawthorne Bridge",
+    capacity: 72,
+    rangeNm: 1350,
+    cruiseSpeedKtas: 446,
+    fuelBurnRating: 50,
+    operatingCostRating: 42,
+    maintenanceCostRating: 68,
+    reliabilityRating: 74,
+    comfortRating: 80,
+    cargoStorageRating: 58,
+    airportRunwayRequirement: "mainline",
+    turnTimeMinutes: 52,
+    purchasePrice: 23500000,
+    monthlyLeasePrice: 382000,
+    deliveryTimeDays: 190,
+    partnerCompatibility: "preferred",
+    notes: "Large regional jet built for affiliate flying and business-heavy routes."
+  },
+  {
+    id: "aircraft-type:vela-vj86-arc",
+    manufacturerId: "manufacturer:vela",
+    name: "Vela VJ-86 Arc",
+    modelCode: "VJ-86",
+    category: "large-regional-jet",
+    family: "Vela Arc",
+    capacity: 86,
+    rangeNm: 1480,
+    cruiseSpeedKtas: 452,
+    fuelBurnRating: 62,
+    operatingCostRating: 55,
+    maintenanceCostRating: 58,
+    reliabilityRating: 68,
+    comfortRating: 72,
+    cargoStorageRating: 62,
+    airportRunwayRequirement: "mainline",
+    turnTimeMinutes: 56,
+    purchasePrice: 25800000,
+    monthlyLeasePrice: 410000,
+    deliveryTimeDays: 220,
+    partnerCompatibility: "preferred",
+    notes: "Efficient high-capacity regional jet with delivery and support tradeoffs."
   }
 ];
+
+/**
+ * List of starter aircraft type IDs available to new players.
+ * This is a maintained list of strings used for default loadouts or tutorials.
+ */
+export const starterAircraftTypeIds = [
+  "aircraft-type:aster-a8-courier",
+  "aircraft-type:kestrel-k10-trail"
+];
+
+export const sampleManufacturers = aircraftManufacturers;
+export const sampleAircraftTypes = aircraftTypes;
 
 export const sampleAircraft = [
   {

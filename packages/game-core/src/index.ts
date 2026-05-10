@@ -1,8 +1,340 @@
-import type { SaveGame } from "@airline-career-sim/shared";
+import type {
+  AcquisitionOption,
+  AircraftCategory,
+  AircraftInstance,
+  AircraftInstanceId,
+  AircraftType,
+  AircraftTypeId,
+  AirportId,
+  RunwayClass,
+  SaveGame
+} from "@airline-career-sim/shared";
 
 export type SimulationModuleStatus = "foundation-ready";
 
 export const simulationModuleStatus: SimulationModuleStatus = "foundation-ready";
+
+const RUNWAY_CLASS_RANK: Record<RunwayClass, number> = {
+  short: 1,
+  standard: 2,
+  regional: 3,
+  mainline: 4,
+  heavy: 5
+};
+
+type AircraftInstanceInput = {
+  id: AircraftInstanceId;
+  registration: string;
+  assignedBase: AirportId;
+};
+
+type UsedAircraftInput = AircraftInstanceInput & {
+  ageYears: number;
+  flightHours: number;
+  cycles: number;
+  condition: number;
+  cabinCondition: number;
+};
+
+export type AircraftComparison = {
+  aircraftTypeId: AircraftTypeId;
+  capacity: number;
+  rangeNm: number;
+  cruiseSpeedKtas: number;
+  operatingCostRating: number;
+  maintenanceCostRating: number;
+  reliabilityRating: number;
+  comfortRating: number;
+  cargoStorageRating: number;
+  purchasePrice: number;
+  monthlyLeasePrice: number;
+};
+
+/**
+ * Finds an aircraft type in the catalog by its ID.
+ *
+ * @param aircraftTypes - The full aircraft type catalog.
+ * @param aircraftTypeId - The ID of the aircraft type to find.
+ * @returns The aircraft type if found, otherwise undefined.
+ */
+export const findAircraftById = (
+  aircraftTypes: readonly AircraftType[],
+  aircraftTypeId: AircraftTypeId
+) => aircraftTypes.find((aircraftType) => aircraftType.id === aircraftTypeId);
+
+/**
+ * Lists all aircraft types belonging to a specific category.
+ *
+ * @param aircraftTypes - The full aircraft type catalog.
+ * @param category - The category to filter by.
+ * @returns An array of matching aircraft types.
+ */
+export const listAircraftByCategory = (
+  aircraftTypes: readonly AircraftType[],
+  category: AircraftCategory
+) => aircraftTypes.filter((aircraftType) => aircraftType.category === category);
+
+/**
+ * Lists all aircraft types marked as valid starter aircraft.
+ *
+ * @param aircraftTypes - The full aircraft type catalog.
+ * @returns An array of valid starter aircraft types.
+ */
+export const listStarterAircraft = (aircraftTypes: readonly AircraftType[]) =>
+  aircraftTypes.filter((aircraftType) => aircraftType.starterAircraft);
+
+/**
+ * Lists all aircraft types produced by a specific manufacturer.
+ *
+ * @param aircraftTypes - The full aircraft type catalog.
+ * @param manufacturerId - The manufacturer ID to filter by.
+ * @returns An array of matching aircraft types.
+ */
+export const listAircraftByManufacturer = (
+  aircraftTypes: readonly AircraftType[],
+  manufacturerId: AircraftType["manufacturerId"]
+) => aircraftTypes.filter((aircraftType) => aircraftType.manufacturerId === manufacturerId);
+
+/**
+ * Compares aircraft types within a category for side-by-side evaluation.
+ *
+ * @param aircraftTypes - The full aircraft type catalog.
+ * @param category - The category to compare.
+ * @returns A summary list of aircraft stats for comparison.
+ */
+export const compareAircraftInSameCategory = (
+  aircraftTypes: readonly AircraftType[],
+  category: AircraftCategory
+): AircraftComparison[] =>
+  listAircraftByCategory(aircraftTypes, category).map((aircraftType) => ({
+    aircraftTypeId: aircraftType.id,
+    capacity: aircraftType.capacity,
+    rangeNm: aircraftType.rangeNm,
+    cruiseSpeedKtas: aircraftType.cruiseSpeedKtas,
+    operatingCostRating: aircraftType.operatingCostRating,
+    maintenanceCostRating: aircraftType.maintenanceCostRating,
+    reliabilityRating: aircraftType.reliabilityRating,
+    comfortRating: aircraftType.comfortRating,
+    cargoStorageRating: aircraftType.cargoStorageRating,
+    purchasePrice: aircraftType.purchasePrice,
+    monthlyLeasePrice: aircraftType.monthlyLeasePrice
+  }));
+
+/**
+ * Checks if an aircraft type is legally or operationally allowed in Act 1.
+ *
+ * @param aircraftType - The aircraft type to check.
+ * @returns True if allowed.
+ */
+export const isAircraftAllowedForAct1 = (aircraftType: AircraftType) =>
+  aircraftType.act1Allowed === true;
+
+/**
+ * Checks if an aircraft can operate from a specific runway class.
+ *
+ * @param aircraftType - The aircraft type to check.
+ * @param runwayClass - The runway class to compare against.
+ * @returns True if the runway is sufficient for the aircraft.
+ */
+export const isRunwayCompatible = (aircraftType: AircraftType, runwayClass: RunwayClass) =>
+  RUNWAY_CLASS_RANK[runwayClass] >= RUNWAY_CLASS_RANK[aircraftType.airportRunwayRequirement];
+
+/**
+ * Options for overriding the default physical state of a newly created aircraft instance.
+ */
+export type AircraftInstanceOverrides = Partial<
+  Pick<
+    AircraftInstance,
+    | "ageYears"
+    | "flightHours"
+    | "cycles"
+    | "condition"
+    | "cabinCondition"
+    | "reliabilityModifier"
+    | "residualValue"
+  >
+>;
+
+/**
+ * Core builder for creating a new AircraftInstance from template and option data.
+ *
+ * @param aircraftType - The base aircraft type template.
+ * @param option - The acquisition structure chosen.
+ * @param input - The unique instance identity (ID, registration, base).
+ * @param overrides - Optional physical state overrides (age, condition, etc.).
+ * @returns A fully populated aircraft instance.
+ */
+const buildAircraftInstance = (
+  aircraftType: AircraftType,
+  option: AcquisitionOption,
+  input: AircraftInstanceInput,
+  overrides: AircraftInstanceOverrides = {}
+): AircraftInstance => ({
+  id: input.id,
+  aircraftTypeId: aircraftType.id,
+  registration: input.registration,
+  ageYears: overrides.ageYears ?? 0,
+  flightHours: overrides.flightHours ?? 0,
+  cycles: overrides.cycles ?? 0,
+  condition: overrides.condition ?? option.condition ?? 100,
+  cabinCondition: overrides.cabinCondition ?? option.cabinCondition ?? 100,
+  reliabilityModifier:
+    overrides.reliabilityModifier !== undefined
+      ? overrides.reliabilityModifier
+      : (option.reliabilityModifier ?? 0),
+  maintenanceStatus: "available",
+  ownership: {
+    acquisitionType: option.acquisitionType,
+    legalOwner: option.legalOwner,
+    paymentResponsibleParty: option.paymentResponsibleParty,
+    operationalControl: option.operationalControl,
+    partnerId: option.partnerId,
+    partnerContractId: option.partnerContractId,
+    restrictedToContractIds: option.restrictedToContractIds,
+    canBeRetainedAfterSeparation: option.canBeRetainedAfterSeparation,
+    buyoutPrice: option.buyoutPrice,
+    mustReturnOnSeparation: option.mustReturnOnSeparation
+  },
+  monthlyPayment: option.monthlyPayment,
+  residualValue: overrides.residualValue ?? Math.round(aircraftType.purchasePrice * 0.72),
+  assignedBase: input.assignedBase,
+  contractRestrictions: option.restrictedToContractIds
+});
+
+/**
+ * Creates an aircraft instance directly from a generated market acquisition option.
+ *
+ * @param aircraftType - The base aircraft type.
+ * @param option - The specific market option.
+ * @param input - The unique instance identity.
+ * @returns A new aircraft instance.
+ */
+export const createAircraftInstanceFromAcquisition = (
+  aircraftType: AircraftType,
+  option: AcquisitionOption,
+  input: AircraftInstanceInput
+) => buildAircraftInstance(aircraftType, option, input);
+
+/**
+ * Creates a starting aircraft instance with Act 1 specific wear and tear.
+ *
+ * @param aircraftType - The base aircraft type.
+ * @param input - The unique instance identity.
+ * @returns A new starter aircraft instance.
+ */
+export const createStartingAircraftInstance = (
+  aircraftType: AircraftType,
+  input: AircraftInstanceInput
+) =>
+  buildAircraftInstance(
+    aircraftType,
+    {
+      acquisitionType: "starting-aircraft",
+      upfrontCost: Math.round(aircraftType.purchasePrice * 0.58),
+      monthlyPayment: 0,
+      deliveryTimeDays: 0,
+      condition: aircraftType.starterProfile?.condition ?? 80,
+      cabinCondition: aircraftType.starterProfile?.cabinCondition ?? 70,
+      reliabilityModifier: aircraftType.starterProfile?.reliabilityModifier ?? 0,
+      legalOwner: "player-airline",
+      paymentResponsibleParty: "player-airline",
+      operationalControl: "player-airline",
+      restrictedToContractIds: [],
+      canBeRetainedAfterSeparation: true,
+      mustReturnOnSeparation: false
+    },
+    input,
+    {
+      ageYears: aircraftType.starterProfile?.ageYears ?? 0,
+      flightHours: aircraftType.starterProfile?.flightHours ?? 0,
+      cycles: aircraftType.starterProfile?.cycles ?? 0,
+      residualValue: Math.round(aircraftType.purchasePrice * 0.55)
+    }
+  );
+
+/**
+ * Creates a used aircraft instance with physical state derived from its history.
+ *
+ * @param aircraftType - The base aircraft type.
+ * @param input - The used aircraft physical and identity data.
+ * @returns A new used aircraft instance.
+ */
+export const createUsedAircraftInstance = (
+  aircraftType: AircraftType,
+  input: UsedAircraftInput
+) => {
+  const agePenalty = Math.floor(input.ageYears / 4);
+  const conditionPenalty = Math.max(0, Math.floor((100 - input.condition) / 8));
+  const reliabilityModifier = -Math.min(35, agePenalty + conditionPenalty);
+
+  return buildAircraftInstance(
+    aircraftType,
+    {
+      acquisitionType: "used-purchase",
+      upfrontCost: Math.round(aircraftType.purchasePrice * (input.condition / 100) * 0.82),
+      monthlyPayment: 0,
+      deliveryTimeDays: 0,
+      condition: input.condition,
+      cabinCondition: input.cabinCondition,
+      reliabilityModifier,
+      legalOwner: "player-airline",
+      paymentResponsibleParty: "player-airline",
+      operationalControl: "player-airline",
+      restrictedToContractIds: [],
+      canBeRetainedAfterSeparation: true,
+      mustReturnOnSeparation: false
+    },
+    input,
+    {
+      ageYears: input.ageYears,
+      flightHours: input.flightHours,
+      cycles: input.cycles,
+      residualValue: Math.round(aircraftType.purchasePrice * (input.condition / 100) * 0.55)
+    }
+  );
+};
+
+/**
+ * Creates a leased aircraft instance (operating, wet, or finance).
+ *
+ * @param aircraftType - The base aircraft type.
+ * @param input - The unique instance identity.
+ * @param acquisitionType - The specific lease structure (defaults to operating-lease).
+ * @returns A new leased aircraft instance.
+ */
+export const createLeasedAircraftInstance = (
+  aircraftType: AircraftType,
+  input: AircraftInstanceInput,
+  acquisitionType: "operating-lease" | "wet-lease" | "finance-lease" = "operating-lease"
+) =>
+  buildAircraftInstance(
+    aircraftType,
+    {
+      acquisitionType,
+      upfrontCost: Math.round(aircraftType.monthlyLeasePrice * 2),
+      monthlyPayment:
+        acquisitionType === "wet-lease"
+          ? Math.round(aircraftType.monthlyLeasePrice * 1.85)
+          : aircraftType.monthlyLeasePrice,
+      deliveryTimeDays: Math.max(14, Math.ceil(aircraftType.deliveryTimeDays * 0.2)),
+      condition: 92,
+      cabinCondition: 88,
+      reliabilityModifier: 1,
+      legalOwner: acquisitionType === "finance-lease" ? "player-airline" : "lessor",
+      paymentResponsibleParty: "player-airline",
+      operationalControl: "player-airline",
+      restrictedToContractIds: [],
+      canBeRetainedAfterSeparation: acquisitionType === "finance-lease",
+      mustReturnOnSeparation: acquisitionType !== "finance-lease"
+    },
+    input,
+    {
+      ageYears: 3,
+      flightHours: 900,
+      cycles: 540,
+      residualValue: Math.round(aircraftType.purchasePrice * 0.68)
+    }
+  );
 
 export type RelationshipIssue = {
   path: string;

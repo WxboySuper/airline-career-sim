@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { aircraftInstanceSchema, productName, simulationPaceSchema } from "./index";
+import {
+  acquisitionOptionSchema,
+  acquisitionTypeSchema,
+  aircraftInstanceSchema,
+  productName,
+  simulationPaceSchema
+} from "./index";
 
 describe("shared package", () => {
   it("exports the product name", () => {
@@ -54,5 +60,88 @@ describe("shared package", () => {
 
     expect(aircraft.ownership.acquisitionType).toBe("partner-financed");
     expect(aircraft.ownership.canBeRetainedAfterSeparation).toBe(true);
+  });
+
+  it("validates acquisition option metadata for every supported structure", () => {
+    expect(acquisitionTypeSchema.options).toEqual([
+      "starting-aircraft",
+      "new-purchase",
+      "used-purchase",
+      "operating-lease",
+      "wet-lease",
+      "finance-lease",
+      "partner-owned",
+      "partner-financed"
+    ]);
+
+    expect(() =>
+      acquisitionOptionSchema.parse({
+        acquisitionType: "partner-owned",
+        upfrontCost: 0,
+        monthlyPayment: 0,
+        deliveryTimeDays: 0,
+        legalOwner: "partner-airline",
+        paymentResponsibleParty: "partner-airline",
+        operationalControl: "shared",
+        partnerId: "partner:northstar",
+        partnerContractId: "contract:northstar-feed",
+        restrictedToContractIds: ["contract:northstar-feed"],
+        canBeRetainedAfterSeparation: false,
+        mustReturnOnSeparation: true
+      })
+    ).not.toThrow();
+  });
+
+  it("enforces constraints on acquisition option fields", () => {
+    // 1. Verify partner-owned requires partnerId (this is currently handled by Zod optional but business rule mandate)
+    // Actually, schema says partnerId is optional. If the business rule is it's required for partner-owned,
+    // we should test that once we add the refinement. For now, checking basic schema constraints.
+
+    // 2. Retention flag consistency (logic check)
+    // Currently z.object doesn't enforce cross-field consistency.
+    // We can add a test for what should throw if we add a superRefine later.
+
+    // 3. Reject negative numeric values
+    expect(() =>
+      acquisitionOptionSchema.parse({
+        acquisitionType: "new-purchase",
+        upfrontCost: -1,
+        monthlyPayment: 0,
+        deliveryTimeDays: 0,
+        legalOwner: "player-airline",
+        paymentResponsibleParty: "player-airline",
+        operationalControl: "player-airline",
+        canBeRetainedAfterSeparation: true,
+        mustReturnOnSeparation: false
+      })
+    ).toThrow();
+
+    expect(() =>
+      acquisitionOptionSchema.parse({
+        acquisitionType: "new-purchase",
+        upfrontCost: 0,
+        monthlyPayment: -500,
+        deliveryTimeDays: 0,
+        legalOwner: "player-airline",
+        paymentResponsibleParty: "player-airline",
+        operationalControl: "player-airline",
+        canBeRetainedAfterSeparation: true,
+        mustReturnOnSeparation: false
+      })
+    ).toThrow();
+
+    expect(() =>
+      acquisitionOptionSchema.parse({
+        acquisitionType: "new-purchase",
+        upfrontCost: 0,
+        monthlyPayment: 0,
+        deliveryTimeDays: -1,
+        legalOwner: "player-airline",
+        paymentResponsibleParty: "player-airline",
+        operationalControl: "player-airline",
+        canBeRetainedAfterSeparation: true,
+        mustReturnOnSeparation: false
+      })
+    ).toThrow();
   });
 });
