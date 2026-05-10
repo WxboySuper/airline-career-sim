@@ -141,7 +141,9 @@ describe("game-core package", () => {
       })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Contract requirement route reference is missing: route:missing" })
+      expect.objectContaining({
+        message: "Contract requirement route reference is missing: route:missing"
+      })
     );
     expect(issues).toContainEqual(
       expect.objectContaining({
@@ -239,7 +241,9 @@ describe("game-core package", () => {
       expect.objectContaining({ message: "Route schedule reference is missing: schedule:missing" })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Route related contract reference is missing: contract:missing" })
+      expect.objectContaining({
+        message: "Route related contract reference is missing: contract:missing"
+      })
     );
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Schedule aircraft must exist." })
@@ -396,7 +400,10 @@ describe("game-core package", () => {
   });
 
   it("creates a deterministic starting aircraft instance", () => {
-    const aster = findAircraftById(aircraftTypes, "aircraft-type:aster-a8-courier" as AircraftTypeId);
+    const aster = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:aster-a8-courier" as AircraftTypeId
+    );
     if (!aster) {
       throw new Error("Aster A-8 Courier not found in catalog");
     }
