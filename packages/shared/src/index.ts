@@ -197,8 +197,17 @@ export const aircraftTypeSchema = z.object({
   monthlyLeasePrice: positiveMoneySchema,
   deliveryTimeDays: z.number().int().nonnegative(),
   partnerCompatibility: partnerCompatibilitySchema,
+  /** Whether the aircraft is legally or operationally permitted for ACT 1 operations. */
   act1Allowed: z.boolean().default(false),
+  /** Flag for starter/introductory aircraft available at the beginning of the game. */
   starterAircraft: z.boolean().default(false),
+  /**
+   * Initial physical state and wear-and-tear profile for starter aircraft.
+   * - `ageYears` / `flightHours`: Non-negative numbers.
+   * - `cycles`: Non-negative integer.
+   * - `condition` / `cabinCondition`: References {@link scoreSchema} (0-100).
+   * - `reliabilityModifier`: Integer offset between -50 and 50.
+   */
   starterProfile: z
     .object({
       ageYears: z.number().nonnegative(),
@@ -225,6 +234,22 @@ export const acquisitionTypeSchema = z.enum([
 ]);
 export type AcquisitionType = z.infer<typeof acquisitionTypeSchema>;
 
+/**
+ * Schema for aircraft acquisition options.
+ *
+ * Models the various ways an aircraft can be acquired (purchase, lease, partner-financed, etc.).
+ * Describes key fields and their relationships:
+ * - `legalOwner`: Who legally owns the aircraft (player, lessor, or partner).
+ * - `paymentResponsibleParty`: Who is responsible for monthly payments.
+ * - `operationalControl`: Who has control over scheduling and operations.
+ * - `partnerId` / `partnerContractId`: References for partner-connected ownership.
+ * - `restrictedToContractIds`: List of contract IDs the aircraft is restricted to (defaults to []).
+ * - `canBeRetainedAfterSeparation`: Whether the player keeps the aircraft after partner separation.
+ * - `mustReturnOnSeparation`: Whether the aircraft must be returned upon separation.
+ * - `buyoutPrice`: Optional cost to buy out a lease or partner share.
+ *
+ * Defines the {@link AcquisitionOption} type via `z.infer`.
+ */
 export const acquisitionOptionSchema = z.object({
   acquisitionType: acquisitionTypeSchema,
   upfrontCost: positiveMoneySchema,

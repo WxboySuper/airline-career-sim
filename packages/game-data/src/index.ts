@@ -93,6 +93,21 @@ export const curatedAirportStubs = [
   }
 ];
 
+/**
+ * Catalog of fictional aircraft manufacturers.
+ * Each manufacturer has a distinct design philosophy, strengths, weaknesses, and cost/reliability profiles.
+ *
+ * @type {readonly {
+ *   id: string,
+ *   name: string,
+ *   designPhilosophy: string,
+ *   strengthTags: string[],
+ *   weaknessTags: string[],
+ *   supportQuality: number,
+ *   typicalCostProfile: "budget" | "balanced" | "premium",
+ *   typicalReliabilityProfile: "fragile" | "standard" | "rugged"
+ * }[]}
+ */
 export const aircraftManufacturers = [
   {
     id: "manufacturer:aster",
@@ -140,6 +155,39 @@ export const aircraftManufacturers = [
   }
 ];
 
+/**
+ * Canonical catalog of aircraft types available in the game.
+ *
+ * Each entry defines the technical specifications, economic profiles, and gameplay roles
+ * for a specific aircraft model.
+ *
+ * Object Properties:
+ * - `id`: Branded unique identifier for the aircraft type.
+ * - `manufacturerId`: Reference to the manufacturer catalog.
+ * - `name`: Display name of the aircraft.
+ * - `modelCode`: Technical ICAO-style model code.
+ * - `category`: Gameplay tier (e.g., founder, commuter, regional-jet).
+ * - `family`: Family grouping for maintenance and training commonality.
+ * - `capacity`: Passenger seating capacity.
+ * - `rangeNm`: Operational range in nautical miles.
+ * - `cruiseSpeedKtas: Speed in knots true airspeed.
+ * - `fuelBurnRating`: Relative fuel efficiency score.
+ * - `operatingCostRating`: Relative hourly operating cost score.
+ * - `maintenanceCostRating`: Relative maintenance cost score.
+ * - `reliabilityRating`: Base reliability score.
+ * - `comfortRating`: Passenger comfort/cabin quality score.
+ * - `cargoStorageRating`: Relative cargo/baggage capacity score.
+ * - `airportRunwayRequirement`: Minimum {@link RunwayClass} required.
+ * - `turnTimeMinutes`: Minimum ground time required between flights.
+ * - `purchasePrice`: Cost to buy new in game currency.
+ * - `monthlyLeasePrice`: Base monthly cost for an operating lease.
+ * - `deliveryTimeDays`: Wait time for new aircraft delivery.
+ * - `partnerCompatibility`: Eligibility for partner-airline operations.
+ * - `notes`: Flavor text and gameplay tips.
+ * - `act1Allowed`: (Optional) Whether available during the founder phase.
+ * - `starterAircraft`: (Optional) Whether selectable as a starting airframe.
+ * - `starterProfile`: (Optional) Pre-defined wear-and-tear for starting instances.
+ */
 export const aircraftTypes = [
   {
     id: "aircraft-type:aster-a8-courier",
@@ -453,6 +501,10 @@ export const aircraftTypes = [
   }
 ];
 
+/**
+ * List of starter aircraft type IDs available to new players.
+ * This is a maintained list of strings used for default loadouts or tutorials.
+ */
 export const starterAircraftTypeIds = [
   "aircraft-type:aster-a8-courier",
   "aircraft-type:kestrel-k10-trail"

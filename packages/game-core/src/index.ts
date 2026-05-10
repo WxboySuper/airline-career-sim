@@ -14,7 +14,7 @@ export type SimulationModuleStatus = "foundation-ready";
 
 export const simulationModuleStatus: SimulationModuleStatus = "foundation-ready";
 
-const runwayClassRank: Record<RunwayClass, number> = {
+const RUNWAY_CLASS_RANK: Record<RunwayClass, number> = {
   short: 1,
   standard: 2,
   regional: 3,
@@ -137,7 +137,7 @@ export const isAircraftAllowedForAct1 = (aircraftType: AircraftType) =>
  * @returns True if the runway is sufficient for the aircraft.
  */
 export const isRunwayCompatible = (aircraftType: AircraftType, runwayClass: RunwayClass) =>
-  runwayClassRank[runwayClass] >= runwayClassRank[aircraftType.airportRunwayRequirement];
+  RUNWAY_CLASS_RANK[runwayClass] >= RUNWAY_CLASS_RANK[aircraftType.airportRunwayRequirement];
 
 /**
  * Options for overriding the default physical state of a newly created aircraft instance.

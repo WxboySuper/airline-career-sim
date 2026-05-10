@@ -486,8 +486,7 @@ export function buildAirportPipelineFromValidated(
     }
   }
 
-  for (const [code, rawValue] of Object.entries(rawAirports)) {
-    const raw = rawValue as RawAirportEntry;
+  for (const [code, raw] of Object.entries(rawAirports)) {
     const curated = curatedAirports[code];
     const status = curated?.curationStatus ?? "unreviewed";
     const airportId = stableAirportId(raw.icao);
