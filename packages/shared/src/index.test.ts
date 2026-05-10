@@ -94,11 +94,11 @@ describe("shared package", () => {
 
   it("enforces constraints on acquisition option fields", () => {
     // 1. Verify partner-owned requires partnerId (this is currently handled by Zod optional but business rule mandate)
-    // Actually, schema says partnerId is optional. If the business rule is it's required for partner-owned, 
+    // Actually, schema says partnerId is optional. If the business rule is it's required for partner-owned,
     // we should test that once we add the refinement. For now, checking basic schema constraints.
 
     // 2. Retention flag consistency (logic check)
-    // Currently z.object doesn't enforce cross-field consistency. 
+    // Currently z.object doesn't enforce cross-field consistency.
     // We can add a test for what should throw if we add a superRefine later.
 
     // 3. Reject negative numeric values
