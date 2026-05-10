@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "lint": "eslint .",
+    "lint": "eslint packages apps",
     "test": "pnpm --filter @airline-career-sim/shared build && pnpm --filter @airline-career-sim/game-data build && vitest run",
     "test:coverage": "pnpm build && vitest run --coverage",
     "typecheck": "pnpm -r typecheck",
