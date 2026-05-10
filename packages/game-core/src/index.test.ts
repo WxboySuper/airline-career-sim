@@ -132,10 +132,24 @@ describe("game-core package", () => {
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Contract trackable objective must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Contract related airport reference is missing: airport:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Contract requirement route reference is missing: route:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Contract requirement airport reference is missing: airport:missing" }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Contract trackable objective must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Contract related airport reference is missing: airport:missing"
+      })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Contract requirement route reference is missing: route:missing"
+      })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Contract requirement airport reference is missing: airport:missing"
+      })
+    );
   });
 
   it("reports missing references in inbox messages and reports", () => {
@@ -167,12 +181,24 @@ describe("game-core package", () => {
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Inbox message objective must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Inbox message contract must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Inbox message route must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Inbox message aircraft must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Inbox message reward unlock must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Report aircraft reference is missing: aircraft:missing" }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Inbox message objective must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Inbox message contract must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Inbox message route must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Inbox message aircraft must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Inbox message reward unlock must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Report aircraft reference is missing: aircraft:missing" })
+    );
   });
 
   it("reports missing references in routes, schedules, and flights", () => {
@@ -205,14 +231,32 @@ describe("game-core package", () => {
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Route origin airport must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Route destination airport must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Route schedule reference is missing: schedule:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Route related contract reference is missing: contract:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Schedule aircraft must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Schedule base airport must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Scheduled flight route must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Scheduled flight aircraft must exist." }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Route origin airport must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Route destination airport must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Route schedule reference is missing: schedule:missing" })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Route related contract reference is missing: contract:missing"
+      })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Schedule aircraft must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Schedule base airport must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Scheduled flight route must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Scheduled flight aircraft must exist." })
+    );
   });
 
   it("reports missing references in airline collections and aircraft entities", () => {
@@ -242,13 +286,31 @@ describe("game-core package", () => {
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Airline contract reference is missing: contract:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Airline objective progress reference is missing: objective-progress:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Airline unlock reference is missing: unlock:missing" }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Aircraft type manufacturer must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Aircraft instance type must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Aircraft assigned base must exist." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Aircraft assigned schedule must exist." }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Airline contract reference is missing: contract:missing"
+      })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        message: "Airline objective progress reference is missing: objective-progress:missing"
+      })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Airline unlock reference is missing: unlock:missing" })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft type manufacturer must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft instance type must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft assigned base must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft assigned schedule must exist." })
+    );
   });
 
   it("reports missing home airport and tracked objective", () => {
@@ -263,21 +325,26 @@ describe("game-core package", () => {
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Airline home airport must exist in save airports." }));
-    expect(issues).toContainEqual(expect.objectContaining({ message: "Tracked objective must exist in save objectives." }));
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Airline home airport must exist in save airports." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Tracked objective must exist in save objectives." })
+    );
   });
 
   it("finds and filters aircraft catalog entries", () => {
-    expect(findAircraftById(aircraftTypes, "aircraft-type:aster-a8-courier" as AircraftTypeId)?.name).toBe(
-      "Aster A-8 Courier"
-    );
+    expect(
+      findAircraftById(aircraftTypes, "aircraft-type:aster-a8-courier" as AircraftTypeId)?.name
+    ).toBe("Aster A-8 Courier");
     expect(
       listAircraftByCategory(aircraftTypes, "founder").map((aircraft) => aircraft.name)
     ).toEqual(["Aster A-8 Courier", "Kestrel K-10 Trail"]);
     expect(
-      listAircraftByManufacturer(aircraftTypes, "manufacturer:hawthorne" as AircraftManufacturerId).map(
-        (aircraft) => aircraft.name
-      )
+      listAircraftByManufacturer(
+        aircraftTypes,
+        "manufacturer:hawthorne" as AircraftManufacturerId
+      ).map((aircraft) => aircraft.name)
     ).toEqual(["Hawthorne H-56 Connector", "Hawthorne HJ-48 Link", "Hawthorne HJ-72 Bridge"]);
   });
 
@@ -316,8 +383,14 @@ describe("game-core package", () => {
   });
 
   it("checks Act 1 aircraft allowance and runway compatibility", () => {
-    const starter = findAircraftById(aircraftTypes, "aircraft-type:kestrel-k10-trail" as AircraftTypeId);
-    const jet = findAircraftById(aircraftTypes, "aircraft-type:hawthorne-hj72-bridge" as AircraftTypeId);
+    const starter = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:kestrel-k10-trail" as AircraftTypeId
+    );
+    const jet = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:hawthorne-hj72-bridge" as AircraftTypeId
+    );
 
     expect(starter && isAircraftAllowedForAct1(starter)).toBe(true);
     expect(jet && isAircraftAllowedForAct1(jet)).toBe(false);
@@ -327,7 +400,10 @@ describe("game-core package", () => {
   });
 
   it("creates a deterministic starting aircraft instance", () => {
-    const aster = findAircraftById(aircraftTypes, "aircraft-type:aster-a8-courier" as AircraftTypeId);
+    const aster = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:aster-a8-courier" as AircraftTypeId
+    );
     expect(aster).toBeDefined();
 
     const instance = createStartingAircraftInstance(aster!, {
@@ -351,7 +427,10 @@ describe("game-core package", () => {
   });
 
   it("applies used purchase condition and reliability penalties", () => {
-    const kestrel = findAircraftById(aircraftTypes, "aircraft-type:kestrel-k19-harbor" as AircraftTypeId);
+    const kestrel = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:kestrel-k19-harbor" as AircraftTypeId
+    );
     expect(kestrel).toBeDefined();
 
     const instance = createUsedAircraftInstance(kestrel!, {
@@ -373,7 +452,10 @@ describe("game-core package", () => {
   });
 
   it("caps reliability penalty at -35 for very old/damaged aircraft", () => {
-    const kestrel = findAircraftById(aircraftTypes, "aircraft-type:kestrel-k19-harbor" as AircraftTypeId);
+    const kestrel = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:kestrel-k19-harbor" as AircraftTypeId
+    );
     const instance = createUsedAircraftInstance(kestrel!, {
       id: "aircraft:old" as AircraftInstanceId,
       registration: "N-OLD",
@@ -411,7 +493,10 @@ describe("game-core package", () => {
   });
 
   it("creates wet-lease and finance-lease aircraft instances", () => {
-    const kestrel = findAircraftById(aircraftTypes, "aircraft-type:kestrel-k32-range" as AircraftTypeId);
+    const kestrel = findAircraftById(
+      aircraftTypes,
+      "aircraft-type:kestrel-k32-range" as AircraftTypeId
+    );
     expect(kestrel).toBeDefined();
 
     const wetLease = createLeasedAircraftInstance(

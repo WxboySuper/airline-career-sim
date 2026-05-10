@@ -182,13 +182,13 @@ The UI should always help the player understand:
 - What is happening
 - Why it is happening
 - What they can do next
-When implementing a system, include enough tests to prove the intended behavior.
+  When implementing a system, include enough tests to prove the intended behavior.
 
 ### Testing Standards
 
 The project follows a "Behavior-First" testing philosophy:
 
-- **Feature Validation:** Every new feature MUST include test cases that verify the *behavior* and *intent* of the feature, not just that the code runs. For example, if an aircraft is documented as "rugged but expensive," tests should explicitly assert that its reliability is higher and its cost is greater than a "budget" counterpart.
+- **Feature Validation:** Every new feature MUST include test cases that verify the _behavior_ and _intent_ of the feature, not just that the code runs. For example, if an aircraft is documented as "rugged but expensive," tests should explicitly assert that its reliability is higher and its cost is greater than a "budget" counterpart.
 - **Regression Testing:** Every bug fix MUST be accompanied by a new test case that reproduces the reported failure and verifies the fix. This prevents regressions and builds a robust safety net.
 - **Coverage Targets:** All simulation logic must meet a minimum threshold of **90% Statement Coverage** and **80% Branch Coverage**. However, coverage is a secondary metric to behavioral correctness.
 - **Data Integrity:** Data-driven systems (catalogs, story events) must have tests verifying that the data is not only valid against the schema but also balanced and logically consistent with the project's lore.
