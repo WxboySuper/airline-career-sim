@@ -201,6 +201,7 @@ Maintain high standards for all code contributions:
 - **Complexity:** Keep functions small and focused. Decompose large functions into smaller helpers to maintain low cyclomatic complexity (ideally < 15).
 - **Brittle Logic:** Avoid string-based logic for core decisions (e.g., `id.includes("name")`). Use explicit flags, categories, or configuration-driven properties.
 - **Type Safety:** Leverage the Zod schema system for data validation. Do not bypass the type system with `any` or excessive casts.
+- **Runtime Safety:** Never use non-null assertions (`!`). Use explicit type guards, conditional checks (e.g., `if (!value) return`), or throw descriptive errors if a value is required.
 - **Naming:** Follow project conventions for naming (e.g., `camelCase` for variables/functions, `PascalCase` for types/classes, `SCREAMING_SNAKE_CASE` for constants).
 
 ## Documentation Expectations

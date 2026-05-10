@@ -141,9 +141,7 @@ describe("game-core package", () => {
       })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({
-        message: "Contract requirement route reference is missing: route:missing"
-      })
+      expect.objectContaining({ message: "Contract requirement route reference is missing: route:missing" })
     );
     expect(issues).toContainEqual(
       expect.objectContaining({
@@ -241,9 +239,7 @@ describe("game-core package", () => {
       expect.objectContaining({ message: "Route schedule reference is missing: schedule:missing" })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({
-        message: "Route related contract reference is missing: contract:missing"
-      })
+      expect.objectContaining({ message: "Route related contract reference is missing: contract:missing" })
     );
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Schedule aircraft must exist." })
@@ -400,13 +396,12 @@ describe("game-core package", () => {
   });
 
   it("creates a deterministic starting aircraft instance", () => {
-    const aster = findAircraftById(
-      aircraftTypes,
-      "aircraft-type:aster-a8-courier" as AircraftTypeId
-    );
-    expect(aster).toBeDefined();
+    const aster = findAircraftById(aircraftTypes, "aircraft-type:aster-a8-courier" as AircraftTypeId);
+    if (!aster) {
+      throw new Error("Aster A-8 Courier not found in catalog");
+    }
 
-    const instance = createStartingAircraftInstance(aster!, {
+    const instance = createStartingAircraftInstance(aster, {
       id: "aircraft:nc101as" as AircraftInstanceId,
       registration: "NC-101AS",
       assignedBase: "airport:kalo" as AirportId
@@ -431,9 +426,11 @@ describe("game-core package", () => {
       aircraftTypes,
       "aircraft-type:kestrel-k19-harbor" as AircraftTypeId
     );
-    expect(kestrel).toBeDefined();
+    if (!kestrel) {
+      throw new Error("Kestrel K-19 Harbor not found in catalog");
+    }
 
-    const instance = createUsedAircraftInstance(kestrel!, {
+    const instance = createUsedAircraftInstance(kestrel, {
       id: "aircraft:nc219kh" as AircraftInstanceId,
       registration: "NC-219KH",
       assignedBase: "airport:kalo" as AirportId,
@@ -447,7 +444,7 @@ describe("game-core package", () => {
     expect(instance.condition).toBe(70);
     expect(instance.cabinCondition).toBe(64);
     expect(instance.reliabilityModifier).toBeLessThan(0);
-    expect(instance.residualValue).toBeLessThan(kestrel!.purchasePrice);
+    expect(instance.residualValue).toBeLessThan(kestrel.purchasePrice);
     expect(instance.ownership.acquisitionType).toBe("used-purchase");
   });
 
@@ -456,7 +453,10 @@ describe("game-core package", () => {
       aircraftTypes,
       "aircraft-type:kestrel-k19-harbor" as AircraftTypeId
     );
-    const instance = createUsedAircraftInstance(kestrel!, {
+    if (!kestrel) {
+      throw new Error("Kestrel K-19 Harbor not found in catalog");
+    }
+    const instance = createUsedAircraftInstance(kestrel, {
       id: "aircraft:old" as AircraftInstanceId,
       registration: "N-OLD",
       assignedBase: "airport:kalo" as AirportId,
@@ -475,15 +475,17 @@ describe("game-core package", () => {
       aircraftTypes,
       "aircraft-type:hawthorne-h56-connector" as AircraftTypeId
     );
-    expect(hawthorne).toBeDefined();
+    if (!hawthorne) {
+      throw new Error("Hawthorne H-56 Connector not found in catalog");
+    }
 
-    const instance = createLeasedAircraftInstance(hawthorne!, {
+    const instance = createLeasedAircraftInstance(hawthorne, {
       id: "aircraft:nc556hc" as AircraftInstanceId,
       registration: "NC-556HC",
       assignedBase: "airport:kalo" as AirportId
     });
 
-    expect(instance.monthlyPayment).toBe(hawthorne!.monthlyLeasePrice);
+    expect(instance.monthlyPayment).toBe(hawthorne.monthlyLeasePrice);
     expect(instance.ownership).toMatchObject({
       acquisitionType: "operating-lease",
       legalOwner: "lessor",
@@ -497,10 +499,12 @@ describe("game-core package", () => {
       aircraftTypes,
       "aircraft-type:kestrel-k32-range" as AircraftTypeId
     );
-    expect(kestrel).toBeDefined();
+    if (!kestrel) {
+      throw new Error("Kestrel K-32 Range not found in catalog");
+    }
 
     const wetLease = createLeasedAircraftInstance(
-      kestrel!,
+      kestrel,
       {
         id: "aircraft:wet" as AircraftInstanceId,
         registration: "N-WET",
@@ -508,11 +512,11 @@ describe("game-core package", () => {
       },
       "wet-lease"
     );
-    expect(wetLease.monthlyPayment).toBeGreaterThan(kestrel!.monthlyLeasePrice);
+    expect(wetLease.monthlyPayment).toBeGreaterThan(kestrel.monthlyLeasePrice);
     expect(wetLease.ownership.acquisitionType).toBe("wet-lease");
 
     const financeLease = createLeasedAircraftInstance(
-      kestrel!,
+      kestrel,
       {
         id: "aircraft:finance" as AircraftInstanceId,
         registration: "N-FIN",
@@ -529,7 +533,9 @@ describe("game-core package", () => {
       aircraftTypes,
       "aircraft-type:hawthorne-hj72-bridge" as AircraftTypeId
     );
-    expect(aircraftType).toBeDefined();
+    if (!aircraftType) {
+      throw new Error("Hawthorne HJ-72 Bridge not found in catalog");
+    }
 
     const option = acquisitionOptionSchema.parse({
       acquisitionType: "partner-financed",
@@ -550,7 +556,7 @@ describe("game-core package", () => {
       mustReturnOnSeparation: false
     });
 
-    const instance = createAircraftInstanceFromAcquisition(aircraftType!, option, {
+    const instance = createAircraftInstanceFromAcquisition(aircraftType, option, {
       id: "aircraft:nc772pb" as AircraftInstanceId,
       registration: "NC-772PB",
       assignedBase: "airport:kalo" as AirportId
