@@ -197,6 +197,18 @@ export const aircraftTypeSchema = z.object({
   monthlyLeasePrice: positiveMoneySchema,
   deliveryTimeDays: z.number().int().nonnegative(),
   partnerCompatibility: partnerCompatibilitySchema,
+  act1Allowed: z.boolean().default(false),
+  starterAircraft: z.boolean().default(false),
+  starterProfile: z
+    .object({
+      ageYears: z.number().nonnegative(),
+      flightHours: z.number().nonnegative(),
+      cycles: z.number().int().nonnegative(),
+      condition: scoreSchema,
+      cabinCondition: scoreSchema,
+      reliabilityModifier: z.number().int().min(-50).max(50)
+    })
+    .optional(),
   notes: z.string().optional()
 });
 export type AircraftType = z.infer<typeof aircraftTypeSchema>;
@@ -212,6 +224,26 @@ export const acquisitionTypeSchema = z.enum([
   "partner-financed"
 ]);
 export type AcquisitionType = z.infer<typeof acquisitionTypeSchema>;
+
+export const acquisitionOptionSchema = z.object({
+  acquisitionType: acquisitionTypeSchema,
+  upfrontCost: positiveMoneySchema,
+  monthlyPayment: positiveMoneySchema,
+  deliveryTimeDays: z.number().int().nonnegative(),
+  condition: scoreSchema.optional(),
+  cabinCondition: scoreSchema.optional(),
+  reliabilityModifier: z.number().int().min(-50).max(50).optional(),
+  legalOwner: z.enum(["player-airline", "lessor", "partner-airline"]),
+  paymentResponsibleParty: z.enum(["player-airline", "partner-airline", "shared", "none"]),
+  operationalControl: z.enum(["player-airline", "partner-airline", "shared"]),
+  partnerId: z.string().min(1).optional(),
+  partnerContractId: contractIdSchema.optional(),
+  restrictedToContractIds: z.array(contractIdSchema).default([]),
+  canBeRetainedAfterSeparation: z.boolean(),
+  buyoutPrice: positiveMoneySchema.optional(),
+  mustReturnOnSeparation: z.boolean()
+});
+export type AcquisitionOption = z.infer<typeof acquisitionOptionSchema>;
 
 export const ownershipControlSchema = z.object({
   acquisitionType: acquisitionTypeSchema,

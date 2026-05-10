@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { aircraftInstanceSchema, productName, simulationPaceSchema } from "./index";
+import {
+  acquisitionOptionSchema,
+  acquisitionTypeSchema,
+  aircraftInstanceSchema,
+  productName,
+  simulationPaceSchema
+} from "./index";
 
 describe("shared package", () => {
   it("exports the product name", () => {
@@ -54,5 +60,35 @@ describe("shared package", () => {
 
     expect(aircraft.ownership.acquisitionType).toBe("partner-financed");
     expect(aircraft.ownership.canBeRetainedAfterSeparation).toBe(true);
+  });
+
+  it("validates acquisition option metadata for every supported structure", () => {
+    expect(acquisitionTypeSchema.options).toEqual([
+      "starting-aircraft",
+      "new-purchase",
+      "used-purchase",
+      "operating-lease",
+      "wet-lease",
+      "finance-lease",
+      "partner-owned",
+      "partner-financed"
+    ]);
+
+    expect(() =>
+      acquisitionOptionSchema.parse({
+        acquisitionType: "partner-owned",
+        upfrontCost: 0,
+        monthlyPayment: 0,
+        deliveryTimeDays: 0,
+        legalOwner: "partner-airline",
+        paymentResponsibleParty: "partner-airline",
+        operationalControl: "shared",
+        partnerId: "partner:northstar",
+        partnerContractId: "contract:northstar-feed",
+        restrictedToContractIds: ["contract:northstar-feed"],
+        canBeRetainedAfterSeparation: false,
+        mustReturnOnSeparation: true
+      })
+    ).not.toThrow();
   });
 });
