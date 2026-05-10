@@ -11,22 +11,22 @@ export type Brand<TValue, TBrand extends string> = TValue & {
   readonly __brand: TBrand;
 };
 
-export type UserId = Brand<string, "UserId">;
-export type AirlineId = Brand<string, "AirlineId">;
-export type AirportId = Brand<string, "AirportId">;
-export type AircraftManufacturerId = Brand<string, "AircraftManufacturerId">;
-export type AircraftTypeId = Brand<string, "AircraftTypeId">;
-export type AircraftInstanceId = Brand<string, "AircraftInstanceId">;
-export type RouteId = Brand<string, "RouteId">;
-export type ScheduleId = Brand<string, "ScheduleId">;
-export type FlightId = Brand<string, "FlightId">;
-export type ContractId = Brand<string, "ContractId">;
-export type ObjectiveId = Brand<string, "ObjectiveId">;
-export type ObjectiveProgressId = Brand<string, "ObjectiveProgressId">;
-export type InboxMessageId = Brand<string, "InboxMessageId">;
-export type ReportId = Brand<string, "ReportId">;
-export type SaveId = Brand<string, "SaveId">;
-export type FeatureUnlockId = Brand<string, "FeatureUnlockId">;
+export type UserId = z.infer<typeof userIdSchema>;
+export type AirlineId = z.infer<typeof airlineIdSchema>;
+export type AirportId = z.infer<typeof airportIdSchema>;
+export type AircraftManufacturerId = z.infer<typeof aircraftManufacturerIdSchema>;
+export type AircraftTypeId = z.infer<typeof aircraftTypeIdSchema>;
+export type AircraftInstanceId = z.infer<typeof aircraftInstanceIdSchema>;
+export type RouteId = z.infer<typeof routeIdSchema>;
+export type ScheduleId = z.infer<typeof scheduleIdSchema>;
+export type FlightId = z.infer<typeof flightIdSchema>;
+export type ContractId = z.infer<typeof contractIdSchema>;
+export type ObjectiveId = z.infer<typeof objectiveIdSchema>;
+export type ObjectiveProgressId = z.infer<typeof objectiveProgressIdSchema>;
+export type InboxMessageId = z.infer<typeof inboxMessageIdSchema>;
+export type ReportId = z.infer<typeof reportIdSchema>;
+export type SaveId = z.infer<typeof saveIdSchema>;
+export type FeatureUnlockId = z.infer<typeof featureUnlockIdSchema>;
 
 /**
  * Creates a Zod schema for a branded string ID with a specific prefix.
