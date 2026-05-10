@@ -182,32 +182,26 @@ The UI should always help the player understand:
 - What is happening
 - Why it is happening
 - What they can do next
-- What risks they are carrying
-
-## Technical Guardrails
-
-Keep simulation logic separate from UI.
-
-Game logic should be deterministic where practical.
-
-Prefer pure functions for simulation systems.
-
-Manual simulation and catch-up simulation should share core logic.
-
-Use tests for core systems.
-
-Avoid hardcoding gameplay rules inside UI components.
-
-Prefer data-driven definitions for:
-
-- Aircraft
-- Airports
-- Career objectives
-- Contracts
-- Unlocks
-- Story events
-
 When implementing a system, include enough tests to prove the intended behavior.
+
+### Testing Standards
+
+The project follows a "Behavior-First" testing philosophy:
+
+- **Feature Validation:** Every new feature MUST include test cases that verify the *behavior* and *intent* of the feature, not just that the code runs. For example, if an aircraft is documented as "rugged but expensive," tests should explicitly assert that its reliability is higher and its cost is greater than a "budget" counterpart.
+- **Regression Testing:** Every bug fix MUST be accompanied by a new test case that reproduces the reported failure and verifies the fix. This prevents regressions and builds a robust safety net.
+- **Coverage Targets:** All simulation logic must meet a minimum threshold of **90% Statement Coverage** and **80% Branch Coverage**. However, coverage is a secondary metric to behavioral correctness.
+- **Data Integrity:** Data-driven systems (catalogs, story events) must have tests verifying that the data is not only valid against the schema but also balanced and logically consistent with the project's lore.
+
+### Code Quality Standards
+
+Maintain high standards for all code contributions:
+
+- **Documentation:** All exported functions, types, and classes MUST have clear JSDoc comments describing purpose, parameters, and return values.
+- **Complexity:** Keep functions small and focused. Decompose large functions into smaller helpers to maintain low cyclomatic complexity (ideally < 15).
+- **Brittle Logic:** Avoid string-based logic for core decisions (e.g., `id.includes("name")`). Use explicit flags, categories, or configuration-driven properties.
+- **Type Safety:** Leverage the Zod schema system for data validation. Do not bypass the type system with `any` or excessive casts.
+- **Naming:** Follow project conventions for naming (e.g., `camelCase` for variables/functions, `PascalCase` for types/classes, `SCREAMING_SNAKE_CASE` for constants).
 
 ## Documentation Expectations
 
