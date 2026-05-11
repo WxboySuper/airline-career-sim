@@ -56,10 +56,17 @@ const starterAircraftTypesCatalog = z.array(aircraftTypeSchema).parse(starterAir
 const starterAirportCatalogEntries = starterAirportCatalog;
 const starterDifficultyPresetCatalog = z
   .array(difficultyPresetSchema)
+  .min(1)
   .parse(starterDifficultyPresets);
-const starterInboxTemplateCatalog = z.array(inboxMessageSchema).parse(starterInboxTemplates);
-const starterObjectiveCatalog = z.array(careerObjectiveSchema).parse(starterObjectives);
-const starterSimulationPaceCatalog = z.array(simulationPaceSchema).parse(starterSimulationPaces);
+const starterInboxTemplateCatalog = z
+  .array(inboxMessageSchema)
+  .min(1)
+  .parse(starterInboxTemplates);
+const starterObjectiveCatalog = z.array(careerObjectiveSchema).min(1).parse(starterObjectives);
+const starterSimulationPaceCatalog = z
+  .array(simulationPaceSchema)
+  .min(1)
+  .parse(starterSimulationPaces);
 
 export type SimulationModuleStatus = "foundation-ready";
 
@@ -1077,7 +1084,7 @@ const chooseDifficultyPreset = (difficulty: Difficulty) => {
   const preset =
     starterDifficultyPresetCatalog.find((p) => p.id === difficulty) ??
     starterDifficultyPresetCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_DIFFICULTY);
-  return preset ?? (starterDifficultyPresetCatalog[0] as DifficultyPreset);
+  return preset ?? starterDifficultyPresetCatalog[0];
 };
 
 /**
@@ -1090,7 +1097,7 @@ const chooseSimulationPace = (paceId: SimulationPace["id"]) => {
   const pace =
     starterSimulationPaceCatalog.find((p) => p.id === paceId) ??
     starterSimulationPaceCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_PACE);
-  return pace ?? (starterSimulationPaceCatalog[0] as SimulationPace);
+  return pace ?? starterSimulationPaceCatalog[0];
 };
 
 /**

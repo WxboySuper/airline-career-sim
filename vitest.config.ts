@@ -20,7 +20,7 @@ export default defineConfig({
         perFile: true,
         statements: 90,
         branches: 80,
-        functions: 90,
+        functions: 100,
         lines: 90
       }
     }

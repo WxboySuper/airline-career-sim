@@ -9,7 +9,12 @@ import {
   type AircraftTypeId,
   type AirportId,
   type ContractId,
-  type ObjectiveId
+  type FeatureUnlockId,
+  type ObjectiveId,
+  type ObjectiveProgressId,
+  type ReportId,
+  type RouteId,
+  type ScheduleId
 } from "@airline-career-sim/shared";
 
 import {
@@ -45,7 +50,7 @@ describe("game-core package", () => {
       ...parsedSave,
       airline: {
         ...parsedSave.airline,
-        routeIds: ["route:missing" as never]
+        routeIds: ["route:missing" as RouteId]
       }
     };
 
@@ -123,13 +128,13 @@ describe("game-core package", () => {
       contracts: [
         {
           ...parsedSave.contracts[0],
-          relatedRouteId: "route:missing" as never,
+          relatedRouteId: "route:missing" as RouteId,
           trackableObjectiveId: "objective:missing" as ObjectiveId,
           relatedAirportIds: ["airport:missing" as AirportId],
           requirements: [
             {
               ...parsedSave.contracts[0].requirements[0],
-              routeId: "route:missing" as never,
+              routeId: "route:missing" as RouteId,
               airportIds: ["airport:missing" as AirportId]
             }
           ]
@@ -179,15 +184,15 @@ describe("game-core package", () => {
           ...parsedSave.inboxMessages[0],
           relatedObjectiveId: "objective:missing" as ObjectiveId,
           relatedContractId: "contract:missing" as ContractId,
-          relatedRouteId: "route:missing" as never,
+          relatedRouteId: "route:missing" as RouteId,
           relatedAircraftId: "aircraft:missing" as AircraftInstanceId,
-          rewardUnlockId: "unlock:missing" as never
+          rewardUnlockId: "unlock:missing" as FeatureUnlockId
         }
       ],
       reports: [
         {
           ...parsedSave.reports[0],
-          id: "report:test" as never,
+          id: "report:test" as ReportId,
           aircraftConditionChanges: [
             {
               aircraftId: "aircraft:missing" as AircraftInstanceId,
@@ -235,13 +240,13 @@ describe("game-core package", () => {
             description: "Test",
             relatedAircraftId: "aircraft:missing" as AircraftInstanceId,
             relatedContractId: "contract:missing" as ContractId,
-            relatedRouteId: "route:missing" as never
+            relatedRouteId: "route:missing" as RouteId
           }
         ]
       }
     };
 
-    const issues = validateSaveGameRelationships(brokenSave as never);
+    const issues = validateSaveGameRelationships(brokenSave as SaveGame);
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Finance state transaction aircraft must exist." })
     );
@@ -261,7 +266,7 @@ describe("game-core package", () => {
         ...parsedSave.objectiveState,
         activeObjectiveIds: ["objective:missing" as ObjectiveId],
         completedObjectiveIds: ["objective:missing" as ObjectiveId],
-        objectiveProgressIds: ["objective-progress:missing" as never]
+        objectiveProgressIds: ["objective-progress:missing" as ObjectiveProgressId]
       }
     };
 
@@ -292,7 +297,7 @@ describe("game-core package", () => {
           ...parsedSave.routes[0],
           originAirportId: "airport:missing" as AirportId,
           destinationAirportId: "airport:missing" as AirportId,
-          assignedScheduleIds: ["schedule:missing" as never],
+          assignedScheduleIds: ["schedule:missing" as ScheduleId],
           relatedContractIds: ["contract:missing" as ContractId]
         }
       ],
@@ -304,7 +309,7 @@ describe("game-core package", () => {
           flights: [
             {
               ...parsedSave.schedules[0].flights[0],
-              routeId: "route:missing" as never,
+              routeId: "route:missing" as RouteId,
               aircraftInstanceId: "aircraft:missing" as AircraftInstanceId
             }
           ]
@@ -348,8 +353,8 @@ describe("game-core package", () => {
       airline: {
         ...parsedSave.airline,
         contractIds: ["contract:missing" as ContractId],
-        objectiveProgressIds: ["objective-progress:missing" as never],
-        featureUnlocks: ["unlock:missing" as never]
+        objectiveProgressIds: ["objective-progress:missing" as ObjectiveProgressId],
+        featureUnlocks: ["unlock:missing" as FeatureUnlockId]
       },
       aircraftTypes: [
         {
@@ -362,7 +367,7 @@ describe("game-core package", () => {
           ...parsedSave.aircraft[0],
           aircraftTypeId: "aircraft-type:missing" as AircraftTypeId,
           assignedBase: "airport:missing" as AirportId,
-          assignedScheduleId: "schedule:missing" as never
+          assignedScheduleId: "schedule:missing" as ScheduleId
         }
       ]
     };
@@ -410,7 +415,7 @@ describe("game-core package", () => {
             restrictedToContractIds: ["contract:missing" as ContractId]
           },
           contractRestrictions: ["contract:missing" as ContractId]
-        } as never
+        }
       ]
     };
 
