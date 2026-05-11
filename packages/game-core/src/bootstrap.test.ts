@@ -194,7 +194,7 @@ describe("airline save bootstrap", () => {
     const starterAircraftType = aircraftTypes.find((aircraftType) => aircraftType.starterAircraft) as NonNullable<typeof aircraftTypes[0]>;
     const starterAirport = starterAirports[0] as NonNullable<typeof starterAirports[0]>;
 
-    const testRunway = (runwayClass: any) =>
+    const testRunway = (runwayClass: never) =>
       validateStarterAircraftEligibility(starterAircraftType, {
         ...starterAirport,
         curated: { ...starterAirport.curated, runwayClass }
@@ -233,3 +233,4 @@ describe("airline save bootstrap", () => {
     expect(save.simulationConfig.simulationPaceId).toBe("standard");
   });
 });
+;
