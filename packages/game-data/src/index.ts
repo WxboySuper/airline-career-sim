@@ -115,7 +115,7 @@ export const curatedAirportStubs = [
  * @param runwayClass - The specific curated runway class (e.g., 'small', 'medium').
  * @returns The general capability class for aircraft assignment (e.g., 'short', 'regional').
  */
-const mapStarterRunwayClass = (runwayClass: string) => {
+export const mapStarterRunwayClass = (runwayClass: string) => {
   switch (runwayClass) {
     case "tiny":
     case "small":

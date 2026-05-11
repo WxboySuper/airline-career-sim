@@ -56,10 +56,14 @@ const starterAircraftTypesCatalog = z.array(aircraftTypeSchema).parse(starterAir
 const starterAirportCatalogEntries = starterAirportCatalog;
 const starterDifficultyPresetCatalog = z
   .array(difficultyPresetSchema)
+  .min(1)
   .parse(starterDifficultyPresets);
-const starterInboxTemplateCatalog = z.array(inboxMessageSchema).parse(starterInboxTemplates);
-const starterObjectiveCatalog = z.array(careerObjectiveSchema).parse(starterObjectives);
-const starterSimulationPaceCatalog = z.array(simulationPaceSchema).parse(starterSimulationPaces);
+const starterInboxTemplateCatalog = z.array(inboxMessageSchema).min(1).parse(starterInboxTemplates);
+const starterObjectiveCatalog = z.array(careerObjectiveSchema).min(1).parse(starterObjectives);
+const starterSimulationPaceCatalog = z
+  .array(simulationPaceSchema)
+  .min(1)
+  .parse(starterSimulationPaces);
 
 export type SimulationModuleStatus = "foundation-ready";
 
@@ -1073,10 +1077,12 @@ const slugify = (value: string) => {
  * @param difficulty - The desired difficulty level.
  * @returns The matching difficulty preset or the default fallback.
  */
-const chooseDifficultyPreset = (difficulty: Difficulty) =>
-  starterDifficultyPresetCatalog.find((preset) => preset.id === difficulty) ??
-  starterDifficultyPresetCatalog.find((preset) => preset.id === DEFAULT_BOOTSTRAP_DIFFICULTY) ??
-  starterDifficultyPresetCatalog[0];
+const chooseDifficultyPreset = (difficulty: Difficulty) => {
+  const preset =
+    starterDifficultyPresetCatalog.find((p) => p.id === difficulty) ??
+    starterDifficultyPresetCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_DIFFICULTY);
+  return preset ?? starterDifficultyPresetCatalog[0];
+};
 
 /**
  * Resolves a simulation pace ID to its specific pace configuration.
@@ -1084,10 +1090,12 @@ const chooseDifficultyPreset = (difficulty: Difficulty) =>
  * @param paceId - The desired simulation pace ID.
  * @returns The matching simulation pace or the default fallback.
  */
-const chooseSimulationPace = (paceId: SimulationPace["id"]) =>
-  starterSimulationPaceCatalog.find((pace) => pace.id === paceId) ??
-  starterSimulationPaceCatalog.find((pace) => pace.id === DEFAULT_BOOTSTRAP_PACE) ??
-  starterSimulationPaceCatalog[0];
+const chooseSimulationPace = (paceId: SimulationPace["id"]) => {
+  const pace =
+    starterSimulationPaceCatalog.find((p) => p.id === paceId) ??
+    starterSimulationPaceCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_PACE);
+  return pace ?? starterSimulationPaceCatalog[0];
+};
 
 /**
  * Resolves the starter airport, validating its eligibility.

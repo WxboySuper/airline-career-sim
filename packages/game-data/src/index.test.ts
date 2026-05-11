@@ -42,7 +42,8 @@ import {
   sampleSaveAirports,
   starterAirports,
   starterAirportPipeline,
-  rawAirportSourceStub
+  rawAirportSourceStub,
+  mapStarterRunwayClass
 } from "./index";
 
 describe("sample game data", () => {
@@ -192,6 +193,15 @@ describe("sample game data", () => {
     for (const preset of difficultyPresets) {
       expect(() => difficultyPresetSchema.parse(preset)).not.toThrow();
     }
+  });
+
+  it("maps starter runway classes", () => {
+    expect(mapStarterRunwayClass("tiny")).toBe("short");
+    expect(mapStarterRunwayClass("small")).toBe("short");
+    expect(mapStarterRunwayClass("medium")).toBe("regional");
+    expect(mapStarterRunwayClass("large")).toBe("mainline");
+    expect(mapStarterRunwayClass("heavy")).toBe("heavy");
+    expect(mapStarterRunwayClass("unknown")).toBe("standard");
   });
 
   it("serializes and deserializes the sample save game", () => {
