@@ -167,32 +167,44 @@ describe("airline save bootstrap", () => {
   });
 
   it("reports other starter airport eligibility issues", () => {
-    const starterAirport = starterAirports[0] as NonNullable<typeof starterAirports[0]>;
+    const starterAirport = starterAirports[0] as NonNullable<(typeof starterAirports)[0]>;
 
-    expect(validateStarterAirportEligibility({
-      ...starterAirport,
-      flags: { ...starterAirport.flags, supportsFounderAircraft: false }
-    })).toContainEqual(expect.objectContaining({ message: "Starter airport must support founder aircraft." }));
+    expect(
+      validateStarterAirportEligibility({
+        ...starterAirport,
+        flags: { ...starterAirport.flags, supportsFounderAircraft: false }
+      })
+    ).toContainEqual(
+      expect.objectContaining({ message: "Starter airport must support founder aircraft." })
+    );
 
-    expect(validateStarterAirportEligibility({
-      ...starterAirport,
-      flags: { ...starterAirport.flags, isExcluded: true }
-    })).toContainEqual(expect.objectContaining({ message: "Starter airport cannot be excluded." }));
+    expect(
+      validateStarterAirportEligibility({
+        ...starterAirport,
+        flags: { ...starterAirport.flags, isExcluded: true }
+      })
+    ).toContainEqual(expect.objectContaining({ message: "Starter airport cannot be excluded." }));
 
-    expect(validateStarterAirportEligibility({
-      ...starterAirport,
-      flags: { ...starterAirport.flags, isDeferred: true }
-    })).toContainEqual(expect.objectContaining({ message: "Starter airport cannot be deferred." }));
+    expect(
+      validateStarterAirportEligibility({
+        ...starterAirport,
+        flags: { ...starterAirport.flags, isDeferred: true }
+      })
+    ).toContainEqual(expect.objectContaining({ message: "Starter airport cannot be deferred." }));
 
-    expect(validateStarterAirportEligibility({
-      ...starterAirport,
-      flags: { ...starterAirport.flags, isPlayable: false }
-    })).toContainEqual(expect.objectContaining({ message: "Starter airport must be playable." }));
+    expect(
+      validateStarterAirportEligibility({
+        ...starterAirport,
+        flags: { ...starterAirport.flags, isPlayable: false }
+      })
+    ).toContainEqual(expect.objectContaining({ message: "Starter airport must be playable." }));
   });
 
   it("maps starter runway classes and checks compatibility", () => {
-    const starterAircraftType = aircraftTypes.find((aircraftType) => aircraftType.starterAircraft) as NonNullable<typeof aircraftTypes[0]>;
-    const starterAirport = starterAirports[0] as NonNullable<typeof starterAirports[0]>;
+    const starterAircraftType = aircraftTypes.find(
+      (aircraftType) => aircraftType.starterAircraft
+    ) as NonNullable<(typeof aircraftTypes)[0]>;
+    const starterAirport = starterAirports[0] as NonNullable<(typeof starterAirports)[0]>;
 
     const testRunway = (runwayClass: never) =>
       validateStarterAircraftEligibility(starterAircraftType, {
@@ -233,4 +245,3 @@ describe("airline save bootstrap", () => {
     expect(save.simulationConfig.simulationPaceId).toBe("standard");
   });
 });
-;

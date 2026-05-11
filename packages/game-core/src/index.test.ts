@@ -248,13 +248,19 @@ describe("game-core package", () => {
 
     const issues = validateSaveGameRelationships(brokenSave);
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Objective state active objective reference is missing: objective:missing" })
+      expect.objectContaining({
+        message: "Objective state active objective reference is missing: objective:missing"
+      })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Objective state completed objective reference is missing: objective:missing" })
+      expect.objectContaining({
+        message: "Objective state completed objective reference is missing: objective:missing"
+      })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Objective state progress reference is missing: objective-progress:missing" })
+      expect.objectContaining({
+        message: "Objective state progress reference is missing: objective-progress:missing"
+      })
     );
   });
 
