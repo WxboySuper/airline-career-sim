@@ -1053,12 +1053,15 @@ export const validateStarterAircraftEligibility = (
  * @param value - The string to slugify.
  * @returns A safe slug string.
  */
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "");
+const slugify = (value: string) => {
+  const chars = value.toLowerCase().split("");
+  const filtered = chars.map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
+  return filtered
+    .join("")
+    .split("-")
+    .filter(Boolean)
+    .join("-");
+};
 
 /**
  * Resolves a difficulty level to its specific preset configuration.
@@ -1144,38 +1147,86 @@ const chooseStarterAircraftType = (
   return aircraftType;
 };
 
+/**
+ * Derives a default short name from a full airline name by stripping common suffixes.
+ *
+ * @param airlineName - The full name of the airline.
+ * @returns A shortened, readable brand name.
+ */
 const deriveAirlineShortName = (airlineName: string) => {
-  const cleanedName = airlineName
-    .replace(/\b(air|aviation|airlines?|aeronautics)\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const suffixes = ["air", "aviation", "airline", "airlines", "aeronautics"];
+  const words = airlineName.split(/\s/);
+  const filteredWords = words.filter((word) => !suffixes.includes(word.toLowerCase()));
+  const cleanedName = filteredWords.join(" ").trim();
   return cleanedName || airlineName.trim();
 };
 
+/**
+ * Derives a default three-letter airline code from the airline name.
+ *
+ * @param airlineName - The full name of the airline.
+ * @returns A 3-character uppercase ICAO-style code.
+ */
 const deriveAirlineCode = (airlineName: string) => {
-  const initials = airlineName
-    .split(/[^a-z0-9]+/i)
-    .filter(Boolean)
-    .map((part) => part[0] ?? "")
+  const chars = airlineName.split("");
+  const initials = chars
+    .filter((c) => /[a-z0-9]/i.test(c))
+    .map((c, i) => (i === 0 || chars[i - 1] === " " ? c : ""))
     .join("")
     .toUpperCase();
 
   return (initials || "AIR").slice(0, 3);
 };
 
+/**
+ * Builds a default callsign from the short name.
+ *
+ * @param shortName - The derived short name of the airline.
+ * @returns A capitalized callsign string.
+ */
 const buildAirlineCallsign = (shortName: string) => shortName.toUpperCase();
 
+/**
+ * Builds a deterministic seed string for procedural brand/livery generation.
+ *
+ * @param airlineName - The airline's full name.
+ * @param founderName - The founder's name.
+ * @param airportId - The starting airport ID.
+ * @returns A deterministic seed string.
+ */
 const buildBrandingSeed = (airlineName: string, founderName: string, airportId: AirportId) =>
   `${slugify(airlineName)}:${slugify(founderName)}:${airportId}`;
 
+/**
+ * Shifts an ISO date string forward by a given number of minutes.
+ *
+ * @param timestamp - The base ISO 8601 string.
+ * @param minutes - The number of minutes to add.
+ * @returns A new shifted ISO 8601 string.
+ */
 const shiftIsoDateTime = (timestamp: string, minutes: number) =>
   new Date(new Date(timestamp).getTime() + minutes * 60_000).toISOString();
 
+/**
+ * Builds a predictable ID for a generated inbox message.
+ *
+ * @param saveIdOrSlug - The save ID string.
+ * @param templateId - The source template ID for the message.
+ * @param index - The message sequence index.
+ * @returns A unique inbox message ID.
+ */
 const buildInboxMessageId = (saveIdOrSlug: string, templateId: string, index: number) => {
   const saveSlug = saveIdOrSlug.replace(/^save:/, "");
-  return `message:${saveSlug}-${slugify(templateId.split(":")[1] ?? `message-${index + 1}`)}`;
+  const templateName = templateId.split(":")[1] ?? `message-${index + 1}`;
+  return `message:${saveSlug}-${slugify(templateName)}`;
 };
 
+/**
+ * Builds a predictable ID for objective progress tracking.
+ *
+ * @param objectiveId - The target objective ID.
+ * @returns A unique objective progress ID.
+ */
 const buildObjectiveProgressId = (objectiveId: ObjectiveId) =>
   objectiveId.replace(/^objective:/, "objective-progress:") as ObjectiveProgressId;
 
@@ -1283,6 +1334,26 @@ const buildFinanceState = (startingCash: number, preset: DifficultyPreset): Fina
   transactionHistory: []
 });
 
+/**
+ * Bootstraps the top-level simulation configuration.
+ *
+ * @param createdAt - The save creation timestamp.
+ * @param currentGameTime - The target starting game time.
+ * @param difficulty - The chosen difficulty level.
+ * @param simulationPaceId - The chosen simulation pace.
+ * @param paused - Whether the simulation should start paused.
+ * @returns The initialized simulation configuration.
+ */
+/**
+ * Bootstraps the top-level simulation configuration.
+ *
+ * @param createdAt - The save creation timestamp.
+ * @param currentGameTime - The target starting game time.
+ * @param difficulty - The chosen difficulty level.
+ * @param simulationPaceId - The chosen simulation pace.
+ * @param paused - Whether the simulation should start paused.
+ * @returns The initialized simulation configuration.
+ */
 const buildSimulationConfig = (
   createdAt: string,
   currentGameTime: string,
@@ -1298,6 +1369,13 @@ const buildSimulationConfig = (
   paused
 });
 
+/**
+ * Bootstraps the lightweight profile for the founder.
+ *
+ * @param founderName - The requested name for the founder.
+ * @param options - Additional options overriding the default founder modifiers.
+ * @returns The initialized founder profile.
+ */
 const buildFounderProfile = (
   founderName: string,
   options: Pick<
@@ -1312,6 +1390,12 @@ const buildFounderProfile = (
   financeModifier: options.founderFinanceModifier ?? 0
 });
 
+/**
+ * Bootstraps the initial story and relationship state.
+ *
+ * @param objective - The first active objective tracking the initial story chapter.
+ * @returns The initialized story state.
+ */
 const buildStoryState = (objective: CareerObjective): StoryState => ({
   currentAct: "act1",
   currentChapter: "founder-operator",
@@ -1320,6 +1404,12 @@ const buildStoryState = (objective: CareerObjective): StoryState => ({
   partnerRelationships: []
 });
 
+/**
+ * Bootstraps the initial active objective state.
+ *
+ * @param objective - The first active objective to track.
+ * @returns The initialized objective tracking state.
+ */
 const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
   trackedObjectiveId: objective.id,
   activeObjectiveIds: [objective.id],
@@ -1330,6 +1420,15 @@ const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
   storyFlags: ["act1-started", `objective:${objective.id}`]
 });
 
+/**
+ * Bootstraps the airline's identity and branding fields.
+ *
+ * @param airlineName - The user-provided full airline name.
+ * @param founderName - The user-provided founder name.
+ * @param starterAirport - The chosen starting airport.
+ * @param options - Explicit overrides for short name, callsign, and code.
+ * @returns The initialized airline identity payload.
+ */
 const buildAirlineIdentity = (
   airlineName: string,
   founderName: string,
