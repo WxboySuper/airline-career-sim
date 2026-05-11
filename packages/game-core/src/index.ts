@@ -1074,8 +1074,9 @@ const slugify = (value: string) => {
  * @returns The matching difficulty preset or the default fallback.
  */
 const chooseDifficultyPreset = (difficulty: Difficulty) => {
-  const preset = starterDifficultyPresetCatalog.find((p) => p.id === difficulty) ??
-                 starterDifficultyPresetCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_DIFFICULTY);
+  const preset =
+    starterDifficultyPresetCatalog.find((p) => p.id === difficulty) ??
+    starterDifficultyPresetCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_DIFFICULTY);
   return preset ?? (starterDifficultyPresetCatalog[0] as DifficultyPreset);
 };
 
@@ -1086,8 +1087,9 @@ const chooseDifficultyPreset = (difficulty: Difficulty) => {
  * @returns The matching simulation pace or the default fallback.
  */
 const chooseSimulationPace = (paceId: SimulationPace["id"]) => {
-  const pace = starterSimulationPaceCatalog.find((p) => p.id === paceId) ??
-               starterSimulationPaceCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_PACE);
+  const pace =
+    starterSimulationPaceCatalog.find((p) => p.id === paceId) ??
+    starterSimulationPaceCatalog.find((p) => p.id === DEFAULT_BOOTSTRAP_PACE);
   return pace ?? (starterSimulationPaceCatalog[0] as SimulationPace);
 };
 

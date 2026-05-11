@@ -434,10 +434,14 @@ describe("game-core package", () => {
 
     const issues = validateSaveGameRelationships(brokenSave);
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Aircraft ownership contract restriction is missing: contract:missing" })
+      expect.objectContaining({
+        message: "Aircraft ownership contract restriction is missing: contract:missing"
+      })
     );
     expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Aircraft contract restriction is missing: contract:missing" })
+      expect.objectContaining({
+        message: "Aircraft contract restriction is missing: contract:missing"
+      })
     );
   });
 
