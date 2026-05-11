@@ -103,6 +103,7 @@ export interface CuratedAirportExportRecord {
   hasInternationalService?: boolean;
   isCargoRelevant?: boolean;
   isMilitary?: boolean;
+  startingAirportEligible?: boolean;
   runwayClass?: CuratedRunwayClass;
   terrainContext?: TerrainContext;
   remoteness?: AirportRemoteness;
@@ -119,6 +120,7 @@ export type CuratedAirportExport = Record<string, CuratedAirportExportRecord>;
 
 interface PreliminaryCuratedAirportRecord {
   airportClass?: string;
+  startingAirportEligible?: boolean;
   runwayClass?: string;
   marketGroup?: string;
   notes?: string;
@@ -134,6 +136,7 @@ export interface AppAirportRecord extends RawAirportEntry {
     hasInternationalService?: boolean;
     isCargoRelevant?: boolean;
     isMilitary?: boolean;
+    startingAirportEligible?: boolean;
     runwayClass?: CuratedRunwayClass;
     terrainContext?: TerrainContext;
     remoteness?: AirportRemoteness;
@@ -153,6 +156,7 @@ export interface AppAirportRecord extends RawAirportEntry {
     isDeferred: boolean;
     isReviewed: boolean;
     isCommercialPassengerAirport: boolean;
+    startingAirportEligible: boolean;
     supportsFounderAircraft: boolean;
     supportsCommuterAircraft: boolean;
     supportsRegionalAircraft: boolean;
@@ -316,6 +320,7 @@ export function validateCuratedAirportExport(input: unknown): {
     copyBoolean(record, validated as MutableRecord, "hasInternationalService", code, diagnostics);
     copyBoolean(record, validated as MutableRecord, "isCargoRelevant", code, diagnostics);
     copyBoolean(record, validated as MutableRecord, "isMilitary", code, diagnostics);
+    copyBoolean(record, validated as MutableRecord, "startingAirportEligible", code, diagnostics);
     copyEnum(
       record,
       validated as MutableRecord,
@@ -376,7 +381,6 @@ function normalizeCuratedAirportRecord(record: Record<string, unknown>): Record<
 function isPreliminaryCuratedAirportRecord(record: Record<string, unknown>): boolean {
   return (
     "airportClass" in record ||
-    "startingAirportEligible" in record ||
     "commercialViability" in record ||
     "marketGroup" in record ||
     "manualOverrides" in record
@@ -521,11 +525,11 @@ export function buildAirportPipelineFromValidated(
       continue;
     }
 
-    if (!curated || missingFields.length > 0) {
+    if (!curated) {
       diagnostics.airportsSkippedDueToStatus.push({
         code,
         status,
-        reason: "Airport is missing required curated fields."
+        reason: "Airport is missing curated data."
       });
       continue;
     }
@@ -577,6 +581,7 @@ export function getRunwayCapabilities(
     isDeferred: false,
     isReviewed: false,
     isCommercialPassengerAirport: false,
+    startingAirportEligible: false,
     supportsFounderAircraft,
     supportsCommuterAircraft,
     supportsRegionalAircraft,
@@ -605,6 +610,7 @@ function toAppAirportRecord(
       hasInternationalService: curated.hasInternationalService,
       isCargoRelevant: curated.isCargoRelevant,
       isMilitary: curated.isMilitary,
+      startingAirportEligible: curated.startingAirportEligible,
       runwayClass: curated.runwayClass,
       terrainContext: curated.terrainContext,
       remoteness: curated.remoteness,
@@ -620,11 +626,16 @@ function toAppAirportRecord(
     },
     flags: {
       ...runwayCapabilities,
-      isPlayable: isReviewed && !isExcluded && !isDeferred,
+      isPlayable: !isExcluded && !isDeferred,
       isExcluded,
       isDeferred,
       isReviewed,
-      isCommercialPassengerAirport: curated.hasCommercialService === true
+      isCommercialPassengerAirport: curated.hasCommercialService === true,
+      startingAirportEligible: curated.startingAirportEligible === true,
+      supportsFounderAircraft: runwayCapabilities.supportsFounderAircraft,
+      supportsCommuterAircraft: runwayCapabilities.supportsCommuterAircraft,
+      supportsRegionalAircraft: runwayCapabilities.supportsRegionalAircraft,
+      supportsHeavyAircraft: runwayCapabilities.supportsHeavyAircraft
     }
   };
 }
@@ -692,10 +703,9 @@ function skipReasonForStatus(
 
 /** Creates a stable branded airport ID from an airport identifier. */
 function stableAirportId(icao: string): AirportId {
-  const slug = icao
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const chars = icao.toLowerCase().split("");
+  const filtered = chars.map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
+  const slug = filtered.join("").split("-").filter(Boolean).join("-");
   return airportIdSchema.parse(`airport:${slug || "unknown"}`) as unknown as AirportId;
 }
 

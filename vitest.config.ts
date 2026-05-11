@@ -1,5 +1,12 @@
 import { defineConfig } from "vitest/config";
 
+export const baseVitestConfig = defineConfig({
+  test: {
+    include: ["src/**/*.test.ts"],
+    environment: "node"
+  }
+});
+
 export default defineConfig({
   test: {
     include: ["packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
