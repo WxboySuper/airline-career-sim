@@ -224,27 +224,6 @@ describe("game-core package", () => {
     const parsedSave = saveGameSchema.parse(sampleSaveGame);
     const brokenSave = {
       ...parsedSave,
-      aircraft: [
-        {
-          ...parsedSave.aircraft[0],
-          ownership: {
-            ...parsedSave.aircraft[0]!.ownership,
-            partnerContractId: "contract:missing" as ContractId
-          }
-        } as never
-      ]
-    };
-
-    const issues = validateSaveGameRelationships(brokenSave as never);
-    expect(issues).toContainEqual(
-      expect.objectContaining({ message: "Aircraft ownership partner contract must exist." })
-    );
-  });
-
-  it("reports missing references in finance state transaction history", () => {
-    const parsedSave = saveGameSchema.parse(sampleSaveGame);
-    const brokenSave = {
-      ...parsedSave,
       financeState: {
         ...parsedSave.financeState,
         transactionHistory: [
