@@ -1057,7 +1057,8 @@ const slugify = (value: string) =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
 
 /**
  * Resolves a difficulty level to its specific preset configuration.
