@@ -397,13 +397,16 @@ describe("game-core package", () => {
 
   it("reports missing restricted contract ID on aircraft ownership and instance", () => {
     const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const targetAircraft = parsedSave.aircraft[0];
+    if (!targetAircraft) throw new Error("No aircraft found in sample save");
+
     const brokenSave = {
       ...parsedSave,
       aircraft: [
         {
-          ...parsedSave.aircraft[0],
+          ...targetAircraft,
           ownership: {
-            ...parsedSave.aircraft[0]!.ownership,
+            ...targetAircraft.ownership,
             restrictedToContractIds: ["contract:missing" as ContractId]
           },
           contractRestrictions: ["contract:missing" as ContractId]
