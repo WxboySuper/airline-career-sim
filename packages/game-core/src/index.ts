@@ -1195,10 +1195,13 @@ const buildObjectiveProgressEntry = (
   id: buildObjectiveProgressId(objective.id),
   objectiveId: objective.id,
   status: index === 0 ? "active" : "locked",
-  requirementProgress: objective.requirements.reduce<Record<string, number>>((progress, requirement) => {
-    progress[requirement.id] = 0;
-    return progress;
-  }, {}),
+  requirementProgress: objective.requirements.reduce<Record<string, number>>(
+    (progress, requirement) => {
+      progress[requirement.id] = 0;
+      return progress;
+    },
+    {}
+  ),
   startedAt: index === 0 ? createdAt : undefined,
   completedAt: undefined
 });
@@ -1236,13 +1239,15 @@ const buildSaveId = (airlineName: string, airportId: AirportId) =>
  * @returns An array of unlocked starter airport records.
  */
 const buildStarterAirportSet = (selectedAirportId: AirportId) => {
-  const airports = starterAirportCuratedStubs.filter(
-    (airport) => {
-      const rec = airport as Record<string, unknown>;
-      const flags = rec.flags as Record<string, unknown> | undefined;
-      return rec.id === selectedAirportId || rec.startingAirportEligible === true || flags?.startingAirportEligible === true;
-    }
-  );
+  const airports = starterAirportCuratedStubs.filter((airport) => {
+    const rec = airport as Record<string, unknown>;
+    const flags = rec.flags as Record<string, unknown> | undefined;
+    return (
+      rec.id === selectedAirportId ||
+      rec.startingAirportEligible === true ||
+      flags?.startingAirportEligible === true
+    );
+  });
 
   return airports.length > 0 ? airports : starterAirportCuratedStubs;
 };
@@ -1254,10 +1259,7 @@ const buildStarterAirportSet = (selectedAirportId: AirportId) => {
  * @param preset - The selected difficulty preset.
  * @returns The initialized finance state.
  */
-const buildFinanceState = (
-  startingCash: number,
-  preset: DifficultyPreset
-): FinanceState => ({
+const buildFinanceState = (startingCash: number, preset: DifficultyPreset): FinanceState => ({
   currentCash: startingCash,
   startingLoanBalance: 0,
   recurringObligations: [
