@@ -9,10 +9,10 @@ import {
   validateStarterAirportEligibility,
   validateStarterAircraftEligibility
 } from "./index";
-
 const baseOptions = {
-  userId: "user:local-founder",
+  userId: "user:local-founder" as const,
   airlineName: "Cedar Valley Air",
+  airlineCode: "CVA",
   founderName: "Local Founder",
   starterAirportId: starterAirports[0]?.id,
   starterAircraftTypeId: aircraftTypes.find((aircraftType) => aircraftType.starterAircraft)?.id,
@@ -225,6 +225,7 @@ describe("airline save bootstrap", () => {
     const save = createNewAirlineSave({
       userId: "user:local-founder",
       airlineName: "Cedar Valley Air",
+      airlineCode: "CVA",
       founderName: "Local Founder"
     });
 

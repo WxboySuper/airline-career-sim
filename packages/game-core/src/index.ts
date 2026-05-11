@@ -1442,7 +1442,7 @@ const buildAirlineIdentity = (
   >
 ): Pick<AirlineIdentity, "shortName" | "callsign" | "code" | "brandingSeed"> => {
   const shortName = options.airlineShortName ?? deriveAirlineShortName(airlineName);
-  const code = options.airlineCode ?? deriveAirlineCode(airlineName);
+  const code = options.airlineCode;
   return {
     shortName,
     callsign: options.airlineCallsign ?? buildAirlineCallsign(shortName),
