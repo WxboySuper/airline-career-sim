@@ -39,7 +39,6 @@ import {
   sampleSimulationConfig,
   sampleSaveGame,
   sampleStoryState,
-  curatedAirportStubs,
   sampleSaveAirports,
   starterAirports,
   rawAirportSourceStub

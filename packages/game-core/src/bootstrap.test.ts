@@ -225,8 +225,8 @@ describe("airline save bootstrap", () => {
   it("uses defaults for difficulty and simulation pace if an unknown ID is provided", () => {
     const save = createNewAirlineSave({
       ...baseOptions,
-      difficulty: "unknown-difficulty" as any,
-      simulationPaceId: "unknown-pace" as any
+      difficulty: "unknown-difficulty" as never,
+      simulationPaceId: "unknown-pace" as never
     });
 
     expect(save.simulationConfig.difficulty).toBe("standard");
