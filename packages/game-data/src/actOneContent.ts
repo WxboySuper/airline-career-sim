@@ -9,8 +9,7 @@ import {
 } from "@airline-career-sim/shared";
 
 export const ACT_ONE_ID = "act1";
-export const ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID =
-  "objective:choose-first-route" as ObjectiveId;
+export const ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID = "objective:choose-first-route" as ObjectiveId;
 
 export const actOneFeatureUnlocks = [
   {
@@ -427,7 +426,8 @@ export const actOneObjectives = [
   {
     id: objectiveIds[9],
     title: "Prove Scheduled Reliability",
-    description: "Operate a small one- or two-route schedule while meeting reliability and cash targets.",
+    description:
+      "Operate a small one- or two-route schedule while meeting reliability and cash targets.",
     actId: ACT_ONE_ID,
     order: 10,
     objectiveType: "main-story",
@@ -762,8 +762,16 @@ export const actOnePrivateContractTemplates = [
         targetValue: 18
       }
     ],
-    rewards: { cash: 15000, reputation: 2, operationalTrust: 1, unlockIds: [], nextObjectiveIds: [] },
-    penalties: [{ type: "reputation", amount: 1, description: "Weak trial service credibility hit." }],
+    rewards: {
+      cash: 15000,
+      reputation: 2,
+      operationalTrust: 1,
+      unlockIds: [],
+      nextObjectiveIds: []
+    },
+    penalties: [
+      { type: "reputation", amount: 1, description: "Weak trial service credibility hit." }
+    ],
     status: "offered",
     trackableObjectiveId: "objective:take-work-where-you-can-get-it"
   },
@@ -771,7 +779,8 @@ export const actOnePrivateContractTemplates = [
     id: "contract:medical-travel-support",
     type: "private",
     title: "Medical Travel Support",
-    description: "A clinic network needs dependable transport support for non-emergency patient travel.",
+    description:
+      "A clinic network needs dependable transport support for non-emergency patient travel.",
     client: "Regional Clinic Network",
     sender: "Regional Clinic Network",
     actId: ACT_ONE_ID,
@@ -792,8 +801,16 @@ export const actOnePrivateContractTemplates = [
         targetValue: 85
       }
     ],
-    rewards: { cash: 18000, reputation: 2, operationalTrust: 2, unlockIds: [], nextObjectiveIds: [] },
-    penalties: [{ type: "operational-trust", amount: 2, description: "Missed support flight trust penalty." }],
+    rewards: {
+      cash: 18000,
+      reputation: 2,
+      operationalTrust: 2,
+      unlockIds: [],
+      nextObjectiveIds: []
+    },
+    penalties: [
+      { type: "operational-trust", amount: 2, description: "Missed support flight trust penalty." }
+    ],
     status: "offered",
     trackableObjectiveId: "objective:take-work-where-you-can-get-it"
   },
@@ -848,7 +865,9 @@ export const actOnePrivateContractTemplates = [
       }
     ],
     rewards: { cash: 16000, reputation: 2, unlockIds: [], nextObjectiveIds: [] },
-    penalties: [{ type: "reputation", amount: 1, description: "Tourism bureau confidence penalty." }],
+    penalties: [
+      { type: "reputation", amount: 1, description: "Tourism bureau confidence penalty." }
+    ],
     status: "offered",
     trackableObjectiveId: "objective:take-work-where-you-can-get-it"
   }
@@ -931,12 +950,23 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
   for (const contract of actOnePrivateContractTemplates) {
     const parsed = contractSchema.safeParse(contract);
     if (!parsed.success) {
-      issues.push({ path: `actOnePrivateContractTemplates.${contract.id}`, message: parsed.error.message });
+      issues.push({
+        path: `actOnePrivateContractTemplates.${contract.id}`,
+        message: parsed.error.message
+      });
     }
   }
 
-  addDuplicateIssues(actOneObjectives.map((objective) => objective.id), "actOneObjectives", issues);
-  addDuplicateIssues(actOneInboxMessages.map((message) => message.id), "actOneInboxMessages", issues);
+  addDuplicateIssues(
+    actOneObjectives.map((objective) => objective.id),
+    "actOneObjectives",
+    issues
+  );
+  addDuplicateIssues(
+    actOneInboxMessages.map((message) => message.id),
+    "actOneInboxMessages",
+    issues
+  );
   addDuplicateIssues(
     actOnePrivateContractTemplates.map((contract) => contract.id),
     "actOnePrivateContractTemplates",

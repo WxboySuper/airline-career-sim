@@ -60,7 +60,9 @@ describe("Act 1 content foundation", () => {
     const objectiveIds = actOneObjectives.map((objective) => objective.id);
     expect(unique(objectiveIds)).toBe(true);
     expect(objectiveIds[0]).toBe(ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID);
-    expect(actOneObjectives.map((objective) => objective.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(actOneObjectives.map((objective) => objective.order)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+    ]);
 
     const objectiveIdSet = new Set(objectiveIds);
     for (const objective of actOneObjectives) {
@@ -80,7 +82,9 @@ describe("Act 1 content foundation", () => {
 
     const messageIds = actOneInboxMessages.map((message) => message.id);
     expect(unique(messageIds)).toBe(true);
-    expect(actOneInboxMessages.filter((message) => message.sender === "Maya Reyes")).toHaveLength(10);
+    expect(actOneInboxMessages.filter((message) => message.sender === "Maya Reyes")).toHaveLength(
+      10
+    );
     expect(getActOneInitialInboxMessages().map((message) => message.id)).toEqual([
       "message:maya-welcome-setup",
       "message:maya-first-route-guidance"
