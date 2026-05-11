@@ -17,6 +17,7 @@ export default defineConfig({
       include: ["packages/*/src/**/*.ts"],
       exclude: ["**/*.test.ts"],
       thresholds: {
+        perFile: true,
         statements: 90,
         branches: 80,
         functions: 90,
