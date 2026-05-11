@@ -98,16 +98,21 @@ describe("game-core package", () => {
     });
   });
 
-  it("reports missing knownAirportIds", () => {
+  it("reports missing knownAirportIds and unlockedAirportIds", () => {
     const parsedSave = saveGameSchema.parse(sampleSaveGame);
     const brokenSave = {
       ...parsedSave,
-      knownAirportIds: ["airport:missing" as AirportId]
+      knownAirportIds: ["airport:missing" as AirportId],
+      unlockedAirportIds: ["airport:missing2" as AirportId]
     };
 
     expect(validateSaveGameRelationships(brokenSave)).toContainEqual({
       path: "knownAirportIds",
       message: "Known airport reference is missing: airport:missing"
+    });
+    expect(validateSaveGameRelationships(brokenSave)).toContainEqual({
+      path: "unlockedAirportIds",
+      message: "Unlocked airport reference is missing: airport:missing2"
     });
   });
 
@@ -118,6 +123,7 @@ describe("game-core package", () => {
       contracts: [
         {
           ...parsedSave.contracts[0],
+          relatedRouteId: "route:missing" as never,
           trackableObjectiveId: "objective:missing" as ObjectiveId,
           relatedAirportIds: ["airport:missing" as AirportId],
           requirements: [
@@ -128,10 +134,19 @@ describe("game-core package", () => {
             }
           ]
         }
+      ],
+      objectiveProgress: [
+        {
+          ...parsedSave.objectiveProgress[0],
+          objectiveId: "objective:missing" as ObjectiveId
+        }
       ]
     };
 
     const issues = validateSaveGameRelationships(brokenSave);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Contract route must exist." })
+    );
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Contract trackable objective must exist." })
     );
@@ -149,6 +164,9 @@ describe("game-core package", () => {
       expect.objectContaining({
         message: "Contract requirement airport reference is missing: airport:missing"
       })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Objective progress target must exist." })
     );
   });
 
@@ -169,6 +187,7 @@ describe("game-core package", () => {
       reports: [
         {
           ...parsedSave.reports[0],
+          id: "report:test" as never,
           aircraftConditionChanges: [
             {
               aircraftId: "aircraft:missing" as AircraftInstanceId,
@@ -198,6 +217,27 @@ describe("game-core package", () => {
     );
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Report aircraft reference is missing: aircraft:missing" })
+    );
+  });
+
+  it("reports missing references in finance state transaction history", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      aircraft: [
+        {
+          ...parsedSave.aircraft[0],
+          ownership: {
+            ...parsedSave.aircraft[0]!.ownership,
+            partnerContractId: "contract:missing" as ContractId
+          }
+        } as never
+      ]
+    };
+
+    const issues = validateSaveGameRelationships(brokenSave as never);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft ownership partner contract must exist." })
     );
   });
 
@@ -373,6 +413,31 @@ describe("game-core package", () => {
     );
     expect(issues).toContainEqual(
       expect.objectContaining({ message: "Aircraft assigned schedule must exist." })
+    );
+  });
+
+  it("reports missing restricted contract ID on aircraft ownership and instance", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      aircraft: [
+        {
+          ...parsedSave.aircraft[0],
+          ownership: {
+            ...parsedSave.aircraft[0]!.ownership,
+            restrictedToContractIds: ["contract:missing" as ContractId]
+          },
+          contractRestrictions: ["contract:missing" as ContractId]
+        } as never
+      ]
+    };
+
+    const issues = validateSaveGameRelationships(brokenSave);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft ownership contract restriction is missing: contract:missing" })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Aircraft contract restriction is missing: contract:missing" })
     );
   });
 
