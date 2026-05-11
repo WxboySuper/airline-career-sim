@@ -713,10 +713,13 @@ function skipReasonForStatus(
 
 /** Creates a stable branded airport ID from an airport identifier. */
 function stableAirportId(icao: string): AirportId {
-  const slug = icao
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const chars = icao.toLowerCase().split("");
+  const filtered = chars.map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
+  const slug = filtered
+    .join("")
+    .split("-")
+    .filter(Boolean)
+    .join("-");
   return airportIdSchema.parse(`airport:${slug || "unknown"}`) as unknown as AirportId;
 }
 
