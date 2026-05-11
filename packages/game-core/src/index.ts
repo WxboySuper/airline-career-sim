@@ -898,6 +898,12 @@ export const validateSaveGameRelationships = (save: SaveGame): RelationshipIssue
 
 type StarterAirport = (typeof starterAirportCatalogEntries)[number];
 
+/**
+ * Maps the detailed curated runway class of a starter airport to the broader aircraft capability class.
+ *
+ * @param runwayClass - The specific curated runway class (e.g., 'small', 'medium').
+ * @returns The general capability class for aircraft assignment (e.g., 'short', 'regional').
+ */
 const mapStarterRunwayClass = (runwayClass: StarterAirport["curated"]["runwayClass"]) => {
   switch (runwayClass) {
     case "tiny":
@@ -1041,22 +1047,47 @@ export const validateStarterAircraftEligibility = (
   return issues;
 };
 
+/**
+ * Converts a string into a URL-friendly slug.
+ *
+ * @param value - The string to slugify.
+ * @returns A safe slug string.
+ */
 const slugify = (value: string) =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+/**
+ * Resolves a difficulty level to its specific preset configuration.
+ *
+ * @param difficulty - The desired difficulty level.
+ * @returns The matching difficulty preset or the default fallback.
+ */
 const chooseDifficultyPreset = (difficulty: Difficulty) =>
   starterDifficultyPresetCatalog.find((preset) => preset.id === difficulty) ??
   starterDifficultyPresetCatalog.find((preset) => preset.id === DEFAULT_BOOTSTRAP_DIFFICULTY) ??
   starterDifficultyPresetCatalog[0];
 
+/**
+ * Resolves a simulation pace ID to its specific pace configuration.
+ *
+ * @param paceId - The desired simulation pace ID.
+ * @returns The matching simulation pace or the default fallback.
+ */
 const chooseSimulationPace = (paceId: SimulationPace["id"]) =>
   starterSimulationPaceCatalog.find((pace) => pace.id === paceId) ??
   starterSimulationPaceCatalog.find((pace) => pace.id === DEFAULT_BOOTSTRAP_PACE) ??
   starterSimulationPaceCatalog[0];
 
+/**
+ * Resolves the starter airport, validating its eligibility.
+ *
+ * @param starterAirportId - The optional specific airport ID requested.
+ * @returns A validated starter airport record.
+ * @throws Error if the requested airport is invalid or unplayable.
+ */
 const chooseStarterAirport = (starterAirportId?: AirportId) => {
   const airport =
     starterAirportId === undefined
@@ -1079,6 +1110,14 @@ const chooseStarterAirport = (starterAirportId?: AirportId) => {
   return airport;
 };
 
+/**
+ * Resolves the starter aircraft type, validating its eligibility against the base.
+ *
+ * @param starterAirport - The chosen starter airport.
+ * @param aircraftTypeId - The optional specific aircraft type ID requested.
+ * @returns A validated starter aircraft type.
+ * @throws Error if the requested aircraft is invalid or incompatible with the airport.
+ */
 const chooseStarterAircraftType = (
   starterAirport: StarterAirport,
   aircraftTypeId?: AircraftTypeId
@@ -1139,6 +1178,14 @@ const buildInboxMessageId = (saveIdOrSlug: string, templateId: string, index: nu
 const buildObjectiveProgressId = (objectiveId: ObjectiveId) =>
   objectiveId.replace(/^objective:/, "objective-progress:") as ObjectiveProgressId;
 
+/**
+ * Builds the initial progress entry for a tracked objective.
+ *
+ * @param objective - The target objective.
+ * @param index - The order index of the objective in the starter sequence.
+ * @param createdAt - The save creation timestamp.
+ * @returns An objective progress record.
+ */
 const buildObjectiveProgressEntry = (
   objective: CareerObjective,
   index: number,
@@ -1147,17 +1194,21 @@ const buildObjectiveProgressEntry = (
   id: buildObjectiveProgressId(objective.id),
   objectiveId: objective.id,
   status: index === 0 ? "active" : "locked",
-  requirementProgress: objective.requirements.reduce<Record<string, number>>(
-    (progress, requirement) => {
-      progress[requirement.id] = 0;
-      return progress;
-    },
-    {}
-  ),
+  requirementProgress: objective.requirements.reduce<Record<string, number>>((progress, requirement) => {
+    progress[requirement.id] = 0;
+    return progress;
+  }, {}),
   startedAt: index === 0 ? createdAt : undefined,
   completedAt: undefined
 });
 
+/**
+ * Builds the starting inbox messages from the catalog templates.
+ *
+ * @param saveSlug - The slugified save ID.
+ * @param createdAt - The save creation timestamp.
+ * @returns An array of generated inbox messages.
+ */
 const buildInboxMessages = (saveSlug: string, createdAt: string): InboxMessage[] =>
   starterInboxTemplateCatalog.map((template, index) => ({
     ...template,
@@ -1167,18 +1218,45 @@ const buildInboxMessages = (saveSlug: string, createdAt: string): InboxMessage[]
     archived: false
   })) as unknown as InboxMessage[];
 
+/**
+ * Builds a deterministic ID for a new save game.
+ *
+ * @param airlineName - The user-provided airline name.
+ * @param airportId - The chosen starting airport ID.
+ * @returns A unique save ID.
+ */
 const buildSaveId = (airlineName: string, airportId: AirportId) =>
   `save:${slugify(airlineName)}-${airportId.replace(/^airport:/, "")}` as SaveId;
 
+/**
+ * Builds the set of known airports available at the start of the game.
+ *
+ * @param selectedAirportId - The chosen starting airport ID.
+ * @returns An array of unlocked starter airport records.
+ */
 const buildStarterAirportSet = (selectedAirportId: AirportId) => {
   const airports = starterAirportCuratedStubs.filter(
-    (airport) => airport.id === selectedAirportId || airport.startingAirportEligible === true
+    (airport) => {
+      const rec = airport as Record<string, unknown>;
+      const flags = rec.flags as Record<string, unknown> | undefined;
+      return rec.id === selectedAirportId || rec.startingAirportEligible === true || flags?.startingAirportEligible === true;
+    }
   );
 
   return airports.length > 0 ? airports : starterAirportCuratedStubs;
 };
 
-const buildFinanceState = (startingCash: number, preset: DifficultyPreset): FinanceState => ({
+/**
+ * Bootstraps the initial finance state for a new save.
+ *
+ * @param startingCash - The initial cash provided by the difficulty preset.
+ * @param preset - The selected difficulty preset.
+ * @returns The initialized finance state.
+ */
+const buildFinanceState = (
+  startingCash: number,
+  preset: DifficultyPreset
+): FinanceState => ({
   currentCash: startingCash,
   startingLoanBalance: 0,
   recurringObligations: [
