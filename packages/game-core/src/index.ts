@@ -49,10 +49,14 @@ import {
   starterAirports as starterAirportCatalog
 } from "@airline-career-sim/game-data";
 
-const starterAircraftManufacturersCatalog = z.array(aircraftManufacturerSchema).parse(starterAircraftManufacturers);
+const starterAircraftManufacturersCatalog = z
+  .array(aircraftManufacturerSchema)
+  .parse(starterAircraftManufacturers);
 const starterAircraftTypesCatalog = z.array(aircraftTypeSchema).parse(starterAircraftTypes);
 const starterAirportCatalogEntries = starterAirportCatalog;
-const starterDifficultyPresetCatalog = z.array(difficultyPresetSchema).parse(starterDifficultyPresets);
+const starterDifficultyPresetCatalog = z
+  .array(difficultyPresetSchema)
+  .parse(starterDifficultyPresets);
 const starterInboxTemplateCatalog = z.array(inboxMessageSchema).parse(starterInboxTemplates);
 const starterObjectiveCatalog = z.array(careerObjectiveSchema).parse(starterObjectives);
 const starterSimulationPaceCatalog = z.array(simulationPaceSchema).parse(starterSimulationPaces);
@@ -1398,7 +1402,10 @@ const buildFounderProfile = (
 const buildStoryState = (objective: CareerObjective): StoryState => ({
   currentAct: "act1",
   currentChapter: "founder-operator",
-  flags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`],
+  flags: [
+    "act1-started",
+    objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`
+  ],
   majorDecisions: [],
   partnerRelationships: []
 });
@@ -1416,7 +1423,10 @@ const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
   objectiveProgressIds: [buildObjectiveProgressId(objective.id)],
   actId: "act1",
   chapterId: "founder-operator",
-  storyFlags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`]
+  storyFlags: [
+    "act1-started",
+    objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`
+  ]
 });
 
 /**
