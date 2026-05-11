@@ -58,10 +58,7 @@ const starterDifficultyPresetCatalog = z
   .array(difficultyPresetSchema)
   .min(1)
   .parse(starterDifficultyPresets);
-const starterInboxTemplateCatalog = z
-  .array(inboxMessageSchema)
-  .min(1)
-  .parse(starterInboxTemplates);
+const starterInboxTemplateCatalog = z.array(inboxMessageSchema).min(1).parse(starterInboxTemplates);
 const starterObjectiveCatalog = z.array(careerObjectiveSchema).min(1).parse(starterObjectives);
 const starterSimulationPaceCatalog = z
   .array(simulationPaceSchema)
