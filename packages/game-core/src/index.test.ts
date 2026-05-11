@@ -201,6 +201,63 @@ describe("game-core package", () => {
     );
   });
 
+  it("reports missing references in finance state transaction history", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      financeState: {
+        ...parsedSave.financeState,
+        transactionHistory: [
+          {
+            id: "tx:1",
+            amount: 100,
+            date: "2026-05-04T08:00:00.000-05:00",
+            category: "other",
+            description: "Test",
+            relatedAircraftId: "aircraft:missing" as AircraftInstanceId,
+            relatedContractId: "contract:missing" as ContractId,
+            relatedRouteId: "route:missing" as never
+          }
+        ]
+      }
+    };
+
+    const issues = validateSaveGameRelationships(brokenSave as never);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Finance state transaction aircraft must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Finance state transaction contract must exist." })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Finance state transaction route must exist." })
+    );
+  });
+
+  it("reports missing references in objective state progress and completed", () => {
+    const parsedSave = saveGameSchema.parse(sampleSaveGame);
+    const brokenSave = {
+      ...parsedSave,
+      objectiveState: {
+        ...parsedSave.objectiveState,
+        activeObjectiveIds: ["objective:missing" as ObjectiveId],
+        completedObjectiveIds: ["objective:missing" as ObjectiveId],
+        objectiveProgressIds: ["objective-progress:missing" as never]
+      }
+    };
+
+    const issues = validateSaveGameRelationships(brokenSave);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Objective state active objective reference is missing: objective:missing" })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Objective state completed objective reference is missing: objective:missing" })
+    );
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: "Objective state progress reference is missing: objective-progress:missing" })
+    );
+  });
+
   it("reports missing references in routes, schedules, and flights", () => {
     const parsedSave = saveGameSchema.parse(sampleSaveGame);
     const brokenSave = {

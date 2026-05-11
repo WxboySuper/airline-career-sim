@@ -27,9 +27,7 @@
     "region": "Alabama",
     "marketGroup": "Aliceville",
     "notes": "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KALX": {
     "id": "airport:kalx",
@@ -59,9 +57,7 @@
     "region": "Alabama",
     "marketGroup": "Alexander City",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KANB": {
     "id": "airport:kanb",
@@ -91,9 +87,7 @@
     "region": "Alabama",
     "marketGroup": "Oxford",
     "notes": "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KASN": {
     "id": "airport:kasn",
@@ -123,9 +117,7 @@
     "region": "Alabama",
     "marketGroup": "Talladega County",
     "notes": "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KAUO": {
     "id": "airport:kauo",
@@ -155,9 +147,7 @@
     "region": "Alabama",
     "marketGroup": "Auburn",
     "notes": "Curated via local airport curator. Use type: public. Terrain: urban. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KBFM": {
     "id": "airport:kbfm",
@@ -187,9 +177,7 @@
     "region": "Alabama",
     "marketGroup": "Mobile",
     "notes": "Curated via local airport curator. Use type: public. Terrain: urban. Remoteness: urban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KBHM": {
     "id": "airport:kbhm",
@@ -219,9 +207,7 @@
     "region": "Alabama",
     "marketGroup": "Birmingham",
     "notes": "Curated via local airport curator. Use type: public. Terrain: urban. Remoteness: urban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KDCU": {
     "id": "airport:kdcu",
@@ -251,9 +237,7 @@
     "region": "Alabama",
     "marketGroup": "Limestone County",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KDHN": {
     "id": "airport:kdhn",
@@ -283,9 +267,7 @@
     "region": "Alabama",
     "marketGroup": "Midland City",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KEDN": {
     "id": "airport:kedn",
@@ -315,9 +297,7 @@
     "region": "Alabama",
     "marketGroup": "Enterprise, AL",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KEUF": {
     "id": "airport:keuf",
@@ -347,9 +327,7 @@
     "region": "Alabama",
     "marketGroup": "Eufaula",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KGAD": {
     "id": "airport:kgad",
@@ -379,9 +357,7 @@
     "region": "Alabama",
     "marketGroup": "Gadsden, AL",
     "notes": "Curated via local airport curator. Use type: public. Terrain: urban. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KHAB": {
     "id": "airport:khab",
@@ -411,9 +387,7 @@
     "region": "Alabama",
     "marketGroup": "Hamilton",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KHSV": {
     "id": "airport:khsv",
@@ -443,9 +417,7 @@
     "region": "Alabama",
     "marketGroup": "Huntsville",
     "notes": "Curated via local airport curator. Use type: public. Terrain: urban. Remoteness: urban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KHUA": {
     "id": "airport:khua",
@@ -475,9 +447,7 @@
     "region": "Alabama",
     "marketGroup": "Madison County",
     "notes": "Curated via local airport curator. Use type: military. Terrain: urban. Remoteness: urban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KJKA": {
     "id": "airport:kjka",
@@ -507,9 +477,7 @@
     "region": "Alabama",
     "marketGroup": "Gulf Shores",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KMGM": {
     "id": "airport:kmgm",
@@ -539,9 +507,7 @@
     "region": "Alabama",
     "marketGroup": "Montgomery",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KMOB": {
     "id": "airport:kmob",
@@ -571,9 +537,7 @@
     "region": "Alabama",
     "marketGroup": "Mobile, AL",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KMSL": {
     "id": "airport:kmsl",
@@ -603,9 +567,7 @@
     "region": "Alabama",
     "marketGroup": "Muscle Shoals",
     "notes": "Curated via local airport curator. Use type: public. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KMVC": {
     "id": "airport:kmvc",
@@ -635,9 +597,7 @@
     "region": "Alabama",
     "marketGroup": "Ollie",
     "notes": "Curated via local airport curator. Use type: municipal. Terrain: flat. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KMXF": {
     "id": "airport:kmxf",
@@ -667,9 +627,7 @@
     "region": "Alabama",
     "marketGroup": "Montgomery",
     "notes": "Curated via local airport curator. Use type: military. Terrain: urban. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KNBJ": {
     "id": "airport:knbj",
@@ -699,9 +657,7 @@
     "region": "Alabama",
     "marketGroup": "Baldwin County",
     "notes": "Curated via local airport curator. Use type: private. Terrain: coastal. Remoteness: small_city.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   },
   "KOZR": {
     "id": "airport:kozr",
@@ -731,8 +687,6 @@
     "region": "Alabama",
     "marketGroup": "Dale County",
     "notes": "Curated via local airport curator. Use type: military. Terrain: flat. Remoteness: suburban.",
-    "manualOverrides": [
-      "local-airport-curator"
-    ]
+    "manualOverrides": ["local-airport-curator"]
   }
 }

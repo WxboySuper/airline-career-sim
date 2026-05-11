@@ -1,14 +1,57 @@
 import type {
   AcquisitionOption,
   AircraftCategory,
+  AircraftManufacturer,
   AircraftInstance,
   AircraftInstanceId,
   AircraftType,
   AircraftTypeId,
+  AirlineIdentity,
+  AirlineStatus,
+  CareerObjective,
+  Difficulty,
+  DifficultyPreset,
+  FinanceState,
+  FounderProfile,
+  InboxMessage,
   AirportId,
+  ObjectiveId,
+  ObjectiveProgress,
+  ObjectiveState,
+  ObjectiveProgressId,
+  SaveId,
+  StoryState,
   RunwayClass,
+  SimulationConfig,
+  SimulationPace,
   SaveGame
 } from "@airline-career-sim/shared";
+
+import { saveGameSchema } from "@airline-career-sim/shared";
+
+import {
+  aircraftManufacturers as starterAircraftManufacturers,
+  aircraftTypes as starterAircraftTypes,
+  curatedAirportStubs as starterAirportCuratedStubs,
+  difficultyPresets as starterDifficultyPresets,
+  sampleInboxMessages as starterInboxTemplates,
+  sampleObjectives as starterObjectives,
+  sampleSaveAirports as starterSaveAirports,
+  sampleSimulationPaces as starterSimulationPaces,
+  starterAirports as starterAirportCatalog
+} from "@airline-career-sim/game-data";
+import type { AppAirportRecord } from "@airline-career-sim/game-data";
+
+const starterAircraftManufacturersCatalog =
+  starterAircraftManufacturers as unknown as readonly AircraftManufacturer[];
+const starterAircraftTypesCatalog = starterAircraftTypes as unknown as readonly AircraftType[];
+const starterAirportCatalogEntries =
+  starterAirportCatalog as unknown as readonly AppAirportRecord[];
+const starterDifficultyPresetCatalog =
+  starterDifficultyPresets as unknown as readonly DifficultyPreset[];
+const starterInboxTemplateCatalog = starterInboxTemplates as unknown as readonly InboxMessage[];
+const starterObjectiveCatalog = starterObjectives as unknown as readonly CareerObjective[];
+const starterSimulationPaceCatalog = starterSimulationPaces as unknown as readonly SimulationPace[];
 
 export type SimulationModuleStatus = "foundation-ready";
 
@@ -361,6 +404,7 @@ type ValidationContext = {
   objectives: ReadonlySet<string>;
   objectiveProgress: ReadonlySet<string>;
   unlocks: ReadonlySet<string>;
+  messages: ReadonlySet<string>;
   knownAirports: ReadonlySet<string>;
   unlockedAirports: ReadonlySet<string>;
 };
@@ -726,6 +770,97 @@ const validateSaveCollections = (
 };
 
 /**
+ * Validates the save-state wrappers that mirror top-level save collections.
+ *
+ * @param save - The save game being validated.
+ * @param ctx - The lookup context for cross-reference checks.
+ * @param issues - The list of issues to append to.
+ */
+const validateDerivedSaveState = (
+  save: SaveGame,
+  ctx: ValidationContext,
+  issues: RelationshipIssue[]
+) => {
+  for (const id of save.inboxState.messageIds) {
+    if (!has(ctx.messages, id)) {
+      issues.push({
+        path: "inboxState.messageIds",
+        message: `Inbox state message reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const id of save.inboxState.unreadMessageIds) {
+    if (!has(ctx.messages, id)) {
+      issues.push({
+        path: "inboxState.unreadMessageIds",
+        message: `Inbox state unread message reference is missing: ${id}`
+      });
+    }
+  }
+
+  if (
+    save.objectiveState.trackedObjectiveId &&
+    !has(ctx.objectives, save.objectiveState.trackedObjectiveId)
+  ) {
+    issues.push({
+      path: "objectiveState.trackedObjectiveId",
+      message: "Objective state tracked objective must exist in save objectives."
+    });
+  }
+
+  for (const id of save.objectiveState.activeObjectiveIds) {
+    if (!has(ctx.objectives, id)) {
+      issues.push({
+        path: "objectiveState.activeObjectiveIds",
+        message: `Objective state active objective reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const id of save.objectiveState.completedObjectiveIds) {
+    if (!has(ctx.objectives, id)) {
+      issues.push({
+        path: "objectiveState.completedObjectiveIds",
+        message: `Objective state completed objective reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const id of save.objectiveState.objectiveProgressIds) {
+    if (!has(ctx.objectiveProgress, id)) {
+      issues.push({
+        path: "objectiveState.objectiveProgressIds",
+        message: `Objective state progress reference is missing: ${id}`
+      });
+    }
+  }
+
+  for (const transaction of save.financeState.transactionHistory) {
+    if (transaction.relatedAircraftId && !has(ctx.aircraft, transaction.relatedAircraftId)) {
+      issues.push({
+        path: `financeState.transactionHistory.${transaction.id}.relatedAircraftId`,
+        message: "Finance state transaction aircraft must exist."
+      });
+    }
+
+    if (transaction.relatedContractId && !has(ctx.contracts, transaction.relatedContractId)) {
+      issues.push({
+        path: `financeState.transactionHistory.${transaction.id}.relatedContractId`,
+        message: "Finance state transaction contract must exist."
+      });
+    }
+
+    if (transaction.relatedRouteId && !has(ctx.routes, transaction.relatedRouteId)) {
+      issues.push({
+        path: `financeState.transactionHistory.${transaction.id}.relatedRouteId`,
+        message: "Finance state transaction route must exist."
+      });
+    }
+  }
+};
+
+/**
  * Validates the referential integrity of a save game object.
  * Checks that all ID references (e.g., aircraftTypeId on an Aircraft) point to
  * an existing entity within the same save game.
@@ -746,6 +881,7 @@ export const validateSaveGameRelationships = (save: SaveGame): RelationshipIssue
     objectives: new Set(save.objectives.map((objective) => objective.id)),
     objectiveProgress: new Set(save.objectiveProgress.map((progress) => progress.id)),
     unlocks: new Set(save.featureUnlocks.map((unlock) => unlock.id)),
+    messages: new Set(save.inboxMessages.map((message) => message.id)),
     knownAirports: new Set(save.knownAirportIds),
     unlockedAirports: new Set(save.unlockedAirportIds)
   };
@@ -755,6 +891,545 @@ export const validateSaveGameRelationships = (save: SaveGame): RelationshipIssue
   validateRoutesAndSchedules(save, ctx, issues);
   validateContractsAndProgress(save, ctx, issues);
   validateSaveCollections(save, ctx, issues);
+  validateDerivedSaveState(save, ctx, issues);
 
   return issues;
+};
+
+type StarterAirport = (typeof starterAirportCatalogEntries)[number];
+
+const mapStarterRunwayClass = (runwayClass: StarterAirport["curated"]["runwayClass"]) => {
+  switch (runwayClass) {
+    case "tiny":
+    case "small":
+      return "short";
+    case "medium":
+      return "regional";
+    case "large":
+      return "mainline";
+    case "heavy":
+      return "heavy";
+    default:
+      return "regional";
+  }
+};
+
+/**
+ * Issue returned when validating whether an airport can be used as the starter base.
+ */
+export type StarterAirportEligibilityIssue = RelationshipIssue;
+
+/**
+ * Issue returned when validating whether an aircraft type can be used as the starter aircraft.
+ */
+export type StarterAircraftEligibilityIssue = RelationshipIssue;
+
+/**
+ * Options for building a new airline save.
+ */
+export type CreateNewAirlineSaveOptions = {
+  userId: SaveGame["userId"];
+  airlineName: string;
+  founderName: string;
+  starterAirportId?: AirportId;
+  starterAircraftTypeId?: AircraftTypeId;
+  simulationPaceId?: SimulationPace["id"];
+  difficulty?: Difficulty;
+  createdAt?: string;
+  currentGameTime?: string;
+  paused?: boolean;
+  airlineShortName?: string;
+  airlineCallsign?: string;
+  airlineCode?: string;
+  primaryMarketArea?: string;
+  brandingSeed?: string;
+  founderBackgroundArchetype?: string;
+  founderReputationModifier?: number;
+  founderFinanceModifier?: number;
+  aircraftRegistration?: string;
+  saveId?: SaveId;
+};
+
+const DEFAULT_BOOTSTRAP_DIFFICULTY: Difficulty = "standard";
+const DEFAULT_BOOTSTRAP_PACE: SimulationPace["id"] = "standard";
+
+/**
+ * Returns the starter-airport validation issues for a candidate airport.
+ *
+ * @param airport - Candidate airport from the starter airport catalog.
+ * @returns An array of validation issues. Empty means the airport is eligible.
+ */
+export const validateStarterAirportEligibility = (
+  airport: StarterAirport
+): StarterAirportEligibilityIssue[] => {
+  const issues: StarterAirportEligibilityIssue[] = [];
+
+  if (!airport.flags.startingAirportEligible) {
+    issues.push({
+      path: airport.id,
+      message: "Starter airport must be marked starter-airport-eligible."
+    });
+  }
+
+  if (!airport.flags.supportsFounderAircraft) {
+    issues.push({
+      path: airport.id,
+      message: "Starter airport must support founder aircraft."
+    });
+  }
+
+  if (airport.flags.isExcluded) {
+    issues.push({
+      path: airport.id,
+      message: "Starter airport cannot be excluded."
+    });
+  }
+
+  if (airport.flags.isDeferred) {
+    issues.push({
+      path: airport.id,
+      message: "Starter airport cannot be deferred."
+    });
+  }
+
+  if (!airport.flags.isPlayable) {
+    issues.push({
+      path: airport.id,
+      message: "Starter airport must be playable."
+    });
+  }
+
+  return issues;
+};
+
+/**
+ * Returns the starter-aircraft validation issues for a candidate aircraft type.
+ *
+ * @param aircraftType - Candidate starter aircraft type.
+ * @param starterAirport - Selected starter airport for runway compatibility checks.
+ * @returns An array of validation issues. Empty means the aircraft is eligible.
+ */
+export const validateStarterAircraftEligibility = (
+  aircraftType: AircraftType,
+  starterAirport: StarterAirport
+): StarterAircraftEligibilityIssue[] => {
+  const issues: StarterAircraftEligibilityIssue[] = [];
+
+  if (!aircraftType.starterAircraft) {
+    issues.push({
+      path: aircraftType.id,
+      message: "Starter aircraft must be flagged as starter aircraft."
+    });
+  }
+
+  if (!aircraftType.act1Allowed) {
+    issues.push({
+      path: aircraftType.id,
+      message: "Starter aircraft must be allowed in Act 1."
+    });
+  }
+
+  if (
+    !isRunwayCompatible(aircraftType, mapStarterRunwayClass(starterAirport.curated.runwayClass))
+  ) {
+    issues.push({
+      path: aircraftType.id,
+      message: "Starter aircraft must be compatible with the selected starter airport."
+    });
+  }
+
+  return issues;
+};
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const chooseDifficultyPreset = (difficulty: Difficulty) =>
+  starterDifficultyPresetCatalog.find((preset) => preset.id === difficulty) ??
+  starterDifficultyPresetCatalog.find((preset) => preset.id === DEFAULT_BOOTSTRAP_DIFFICULTY) ??
+  starterDifficultyPresetCatalog[0];
+
+const chooseSimulationPace = (paceId: SimulationPace["id"]) =>
+  starterSimulationPaceCatalog.find((pace) => pace.id === paceId) ??
+  starterSimulationPaceCatalog.find((pace) => pace.id === DEFAULT_BOOTSTRAP_PACE) ??
+  starterSimulationPaceCatalog[0];
+
+const chooseStarterAirport = (starterAirportId?: AirportId) => {
+  const airport =
+    starterAirportId === undefined
+      ? starterAirportCatalogEntries[0]
+      : starterAirportCatalogEntries.find((candidate) => candidate.id === starterAirportId);
+
+  if (!airport) {
+    throw new Error(
+      starterAirportId
+        ? `Starter airport not found: ${starterAirportId}`
+        : "No starter airports are available."
+    );
+  }
+
+  const issues = validateStarterAirportEligibility(airport);
+  if (issues.length > 0) {
+    throw new Error(issues.map((issue) => issue.message).join("; "));
+  }
+
+  return airport;
+};
+
+const chooseStarterAircraftType = (
+  starterAirport: StarterAirport,
+  aircraftTypeId?: AircraftTypeId
+) => {
+  const aircraftType =
+    aircraftTypeId === undefined
+      ? listStarterAircraft(starterAircraftTypesCatalog)[0]
+      : findAircraftById(starterAircraftTypesCatalog, aircraftTypeId);
+
+  if (!aircraftType) {
+    throw new Error(
+      aircraftTypeId
+        ? `Starter aircraft not found: ${aircraftTypeId}`
+        : "No starter aircraft are available."
+    );
+  }
+
+  const issues = validateStarterAircraftEligibility(aircraftType, starterAirport);
+  if (issues.length > 0) {
+    throw new Error(issues.map((issue) => issue.message).join("; "));
+  }
+
+  return aircraftType;
+};
+
+const deriveAirlineShortName = (airlineName: string) => {
+  const cleanedName = airlineName
+    .replace(/\b(air|aviation|airlines?|aeronautics)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleanedName || airlineName.trim();
+};
+
+const deriveAirlineCode = (airlineName: string) => {
+  const initials = airlineName
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+
+  return (initials || "AIR").slice(0, 3);
+};
+
+const buildAirlineCallsign = (shortName: string) => shortName.toUpperCase();
+
+const buildBrandingSeed = (airlineName: string, founderName: string, airportId: AirportId) =>
+  `${slugify(airlineName)}:${slugify(founderName)}:${airportId}`;
+
+const shiftIsoDateTime = (timestamp: string, minutes: number) =>
+  new Date(new Date(timestamp).getTime() + minutes * 60_000).toISOString();
+
+const buildInboxMessageId = (saveIdOrSlug: string, templateId: string, index: number) => {
+  const saveSlug = saveIdOrSlug.replace(/^save:/, "");
+  return `message:${saveSlug}-${slugify(templateId.split(":")[1] ?? `message-${index + 1}`)}`;
+};
+
+const buildObjectiveProgressId = (objectiveId: ObjectiveId) =>
+  objectiveId.replace(/^objective:/, "objective-progress:") as ObjectiveProgressId;
+
+const buildObjectiveProgressEntry = (
+  objective: CareerObjective,
+  index: number,
+  createdAt: string
+): ObjectiveProgress => ({
+  id: buildObjectiveProgressId(objective.id),
+  objectiveId: objective.id,
+  status: index === 0 ? "active" : "locked",
+  requirementProgress: objective.requirements.reduce<Record<string, number>>(
+    (progress, requirement) => {
+      progress[requirement.id] = 0;
+      return progress;
+    },
+    {}
+  ),
+  startedAt: index === 0 ? createdAt : undefined,
+  completedAt: undefined
+});
+
+const buildInboxMessages = (saveSlug: string, createdAt: string): InboxMessage[] =>
+  starterInboxTemplateCatalog.map((template, index) => ({
+    ...template,
+    id: buildInboxMessageId(saveSlug, template.id, index),
+    createdAt: shiftIsoDateTime(createdAt, index * 3 + 1),
+    read: false,
+    archived: false
+  })) as unknown as InboxMessage[];
+
+const buildSaveId = (airlineName: string, airportId: AirportId) =>
+  `save:${slugify(airlineName)}-${airportId.replace(/^airport:/, "")}` as SaveId;
+
+const buildStarterAirportSet = (selectedAirportId: AirportId) => {
+  const airports = starterAirportCuratedStubs.filter(
+    (airport) => airport.id === selectedAirportId || airport.startingAirportEligible === true
+  );
+
+  return airports.length > 0 ? airports : starterAirportCuratedStubs;
+};
+
+const buildFinanceState = (startingCash: number, preset: DifficultyPreset): FinanceState => ({
+  currentCash: startingCash,
+  startingLoanBalance: 0,
+  recurringObligations: [
+    {
+      id: "obligation:maintenance-reserve",
+      label: "Maintenance reserve",
+      amount: Math.max(0, Math.round(startingCash * 0.12 + preset.maintenanceForgiveness * 1_000)),
+      cadence: "monthly"
+    },
+    {
+      id: "obligation:overhead",
+      label: "Operations overhead",
+      amount: Math.max(0, Math.round(startingCash * 0.04 * preset.fuelCostMultiplier)),
+      cadence: "monthly"
+    }
+  ],
+  maintenanceReserve: Math.max(
+    0,
+    Math.round(startingCash * 0.12 + preset.maintenanceForgiveness * 1_000)
+  ),
+  transactionHistory: []
+});
+
+const buildSimulationConfig = (
+  createdAt: string,
+  currentGameTime: string,
+  difficulty: Difficulty,
+  simulationPaceId: SimulationPace["id"],
+  paused: boolean
+): SimulationConfig => ({
+  simulationPaceId,
+  difficulty,
+  createdAt,
+  lastPlayedAt: createdAt,
+  currentGameTime,
+  paused
+});
+
+const buildFounderProfile = (
+  founderName: string,
+  options: Pick<
+    CreateNewAirlineSaveOptions,
+    "founderBackgroundArchetype" | "founderFinanceModifier" | "founderReputationModifier"
+  >
+): FounderProfile => ({
+  id: `founder:${slugify(founderName)}` as FounderProfile["id"],
+  name: founderName,
+  backgroundArchetype: options.founderBackgroundArchetype,
+  reputationModifier: options.founderReputationModifier ?? 0,
+  financeModifier: options.founderFinanceModifier ?? 0
+});
+
+const buildStoryState = (objective: CareerObjective): StoryState => ({
+  currentAct: "act1",
+  currentChapter: "founder-operator",
+  flags: ["act1-started", `objective:${objective.id}`],
+  majorDecisions: [],
+  partnerRelationships: []
+});
+
+const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
+  trackedObjectiveId: objective.id,
+  activeObjectiveIds: [objective.id],
+  completedObjectiveIds: [],
+  objectiveProgressIds: [buildObjectiveProgressId(objective.id)],
+  actId: "act1",
+  chapterId: "founder-operator",
+  storyFlags: ["act1-started", `objective:${objective.id}`]
+});
+
+const buildAirlineIdentity = (
+  airlineName: string,
+  founderName: string,
+  starterAirport: StarterAirport,
+  options: Pick<
+    CreateNewAirlineSaveOptions,
+    "airlineShortName" | "airlineCallsign" | "airlineCode" | "brandingSeed"
+  >
+): Pick<AirlineIdentity, "shortName" | "callsign" | "code" | "brandingSeed"> => {
+  const shortName = options.airlineShortName ?? deriveAirlineShortName(airlineName);
+  const code = options.airlineCode ?? deriveAirlineCode(airlineName);
+  return {
+    shortName,
+    callsign: options.airlineCallsign ?? buildAirlineCallsign(shortName),
+    code,
+    brandingSeed:
+      options.brandingSeed ??
+      buildBrandingSeed(airlineName, founderName, starterAirport.id as AirportId)
+  };
+};
+
+/**
+ * Creates a new airline save with deterministic starter data and validation.
+ *
+ * @param options - New save creation options.
+ * @returns A fully validated save game object.
+ */
+export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): SaveGame => {
+  const createdAt = options.createdAt ?? new Date().toISOString();
+  const currentGameTime = options.currentGameTime ?? createdAt;
+  const difficulty = options.difficulty ?? DEFAULT_BOOTSTRAP_DIFFICULTY;
+  const simulationPaceId = options.simulationPaceId ?? DEFAULT_BOOTSTRAP_PACE;
+  const founderReputationModifier = options.founderReputationModifier ?? 0;
+  const difficultyPreset = chooseDifficultyPreset(difficulty);
+  const simulationPace = chooseSimulationPace(simulationPaceId);
+  const starterAirport = chooseStarterAirport(options.starterAirportId);
+  const starterAircraftType = chooseStarterAircraftType(
+    starterAirport,
+    options.starterAircraftTypeId
+  );
+  const starterAirlineIdentity = buildAirlineIdentity(
+    options.airlineName,
+    options.founderName,
+    starterAirport,
+    options
+  );
+  const saveId = options.saveId ?? buildSaveId(options.airlineName, starterAirport.id);
+  const starterAircraft = createStartingAircraftInstance(starterAircraftType, {
+    id: `aircraft:${slugify(saveId.replace(/^save:/, ""))}` as AircraftInstanceId,
+    registration:
+      options.aircraftRegistration ??
+      `${starterAirlineIdentity.code}-${starterAircraftType.modelCode}`,
+    assignedBase: starterAirport.id
+  });
+  const adjustedStarterAircraft: AircraftInstance = {
+    ...starterAircraft,
+    reliabilityModifier:
+      starterAircraft.reliabilityModifier + Math.trunc(difficultyPreset.maintenanceForgiveness / 5)
+  };
+  const objectives = starterObjectiveCatalog;
+  const activeObjective = objectives[0];
+
+  if (!activeObjective) {
+    throw new Error("No starter objectives are available.");
+  }
+
+  const objectiveProgress = objectives.map((objective, index) =>
+    buildObjectiveProgressEntry(objective, index, createdAt)
+  );
+  const objectiveState = buildObjectiveState(activeObjective);
+  const inboxMessages = buildInboxMessages(saveId, createdAt);
+  const financeState = buildFinanceState(difficultyPreset.startingCash, difficultyPreset);
+  const selectedAirportIds = [
+    starterAirport.id,
+    ...buildStarterAirportSet(starterAirport.id)
+      .map((airport) => airport.id)
+      .filter((airportId) => airportId !== starterAirport.id)
+  ] as AirportId[];
+
+  const saveCandidate = {
+    id: saveId,
+    userId: options.userId,
+    founderProfile: buildFounderProfile(options.founderName, options),
+    airline: {
+      id: `airline:${slugify(options.airlineName)}` as SaveGame["airline"]["id"],
+      name: options.airlineName,
+      shortName: starterAirlineIdentity.shortName,
+      callsign: starterAirlineIdentity.callsign,
+      code: starterAirlineIdentity.code,
+      founderName: options.founderName,
+      foundedAt: createdAt,
+      homeAirportId: starterAirport.id,
+      primaryMarketArea:
+        options.primaryMarketArea ?? starterAirport.curated.marketArea ?? starterAirport.city,
+      brandingSeed: starterAirlineIdentity.brandingSeed,
+      status: "active" as AirlineStatus,
+      currentPhase: "founder-operator",
+      cash: financeState.currentCash,
+      reputation: Math.max(
+        0,
+        5 + founderReputationModifier + difficultyPreset.reputationForgiveness
+      ),
+      credibility: Math.max(
+        0,
+        4 +
+          Math.trunc(founderReputationModifier / 2) +
+          Math.trunc(difficultyPreset.reputationForgiveness / 2)
+      ),
+      reliability: 100,
+      operationalTrust: Math.max(
+        0,
+        3 +
+          Math.trunc(founderReputationModifier / 2) +
+          Math.trunc(difficultyPreset.reputationForgiveness / 3)
+      ),
+      difficulty: difficultyPreset.id as Difficulty,
+      simulationPaceId: simulationPace.id,
+      createdAt,
+      lastSimulatedAt: currentGameTime,
+      featureUnlocks: [],
+      activeTrackedObjectiveId: activeObjective.id,
+      aircraftIds: [adjustedStarterAircraft.id],
+      routeIds: [],
+      contractIds: [],
+      objectiveProgressIds: objectiveProgress.map((progress) => progress.id)
+    },
+    simulationConfig: buildSimulationConfig(
+      createdAt,
+      currentGameTime,
+      difficultyPreset.id as Difficulty,
+      simulationPace.id,
+      options.paused ?? true
+    ),
+    currentGameTime,
+    lastSimulatedAt: currentGameTime,
+    simulationPace,
+    financeState,
+    knownAirportIds: selectedAirportIds,
+    unlockedAirportIds: selectedAirportIds,
+    airports: starterSaveAirports.filter((airport) =>
+      selectedAirportIds.includes(airport.id as AirportId)
+    ) as unknown as SaveGame["airports"],
+    aircraftManufacturers: starterAircraftManufacturersCatalog,
+    aircraftTypes: starterAircraftTypesCatalog,
+    aircraft: [adjustedStarterAircraft],
+    routes: [],
+    schedules: [],
+    contracts: [],
+    objectives: starterObjectiveCatalog,
+    objectiveProgress,
+    milestones: [],
+    inboxMessages,
+    inboxState: {
+      messageIds: inboxMessages.map((message) => message.id),
+      unreadMessageIds: inboxMessages
+        .filter((message) => !message.read)
+        .map((message) => message.id),
+      lastInboxSyncAt: createdAt
+    },
+    reports: [],
+    featureUnlocks: [],
+    trackedObjectiveId: activeObjective.id,
+    objectiveState,
+    storyState: buildStoryState(activeObjective),
+    settings: {
+      difficulty: difficultyPreset.id as Difficulty,
+      simulationPaceId: simulationPace.id,
+      autosaveEnabled: true
+    }
+  } as unknown as SaveGame;
+
+  const parsedSave = saveGameSchema.parse(saveCandidate);
+  const relationshipIssues = validateSaveGameRelationships(parsedSave);
+
+  if (relationshipIssues.length > 0) {
+    throw new Error(
+      `Starter save failed validation: ${relationshipIssues
+        .map((issue) => `${issue.path}: ${issue.message}`)
+        .join("; ")}`
+    );
+  }
+
+  return parsedSave;
 };

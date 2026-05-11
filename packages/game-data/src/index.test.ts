@@ -1,29 +1,47 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  airlineIdentitySchema,
+  difficultyPresetSchema,
+  financeStateSchema,
+  founderProfileSchema,
   aircraftInstanceSchema,
   aircraftManufacturerSchema,
   aircraftTypeSchema,
   contractSchema,
   curatedAirportSchema,
+  inboxStateSchema,
   inboxMessageSchema,
+  objectiveStateSchema,
   rawAirportSchema,
   saveGameSchema,
   careerObjectiveSchema,
+  simulationConfigSchema,
+  storyStateSchema,
   rawAirportEntrySchema
 } from "@airline-career-sim/shared";
 
 import {
+  difficultyPresets,
   aircraftManufacturers,
   aircraftTypes,
   sampleAircraft,
+  sampleAirline,
   sampleAircraftTypes,
   sampleContracts,
+  sampleFinanceState,
+  sampleFounderProfile,
   sampleInboxMessages,
+  sampleInboxState,
+  sampleObjectiveState,
   sampleManufacturers,
   sampleObjectives,
+  sampleSimulationConfig,
   sampleSaveGame,
+  sampleStoryState,
   curatedAirportStubs,
+  sampleSaveAirports,
+  starterAirports,
   rawAirportSourceStub
 } from "./index";
 
@@ -53,9 +71,12 @@ describe("sample game data", () => {
     for (const airport of Object.values(rawAirportSourceStub)) {
       expect(() => rawAirportEntrySchema.parse(airport)).not.toThrow();
     }
-    for (const airport of curatedAirportStubs) {
+    expect(starterAirports[0]?.curated.runwayClass).toBe("small");
+    expect(starterAirports[0]?.flags.supportsFounderAircraft).toBe(true);
+    for (const airport of sampleSaveAirports) {
       expect(() => curatedAirportSchema.parse(airport)).not.toThrow();
     }
+    expect(sampleSaveAirports.map((airport) => airport.runwayClass)).toEqual(["short", "short"]);
     for (const manufacturer of sampleManufacturers) {
       expect(() => aircraftManufacturerSchema.parse(manufacturer)).not.toThrow();
     }
@@ -74,6 +95,13 @@ describe("sample game data", () => {
     for (const message of sampleInboxMessages) {
       expect(() => inboxMessageSchema.parse(message)).not.toThrow();
     }
+    expect(() => founderProfileSchema.parse(sampleFounderProfile)).not.toThrow();
+    expect(() => airlineIdentitySchema.parse(sampleAirline)).not.toThrow();
+    expect(() => simulationConfigSchema.parse(sampleSimulationConfig)).not.toThrow();
+    expect(() => financeStateSchema.parse(sampleFinanceState)).not.toThrow();
+    expect(() => inboxStateSchema.parse(sampleInboxState)).not.toThrow();
+    expect(() => objectiveStateSchema.parse(sampleObjectiveState)).not.toThrow();
+    expect(() => storyStateSchema.parse(sampleStoryState)).not.toThrow();
   });
 
   it("validates the manufacturer catalog", () => {
@@ -145,12 +173,37 @@ describe("sample game data", () => {
     expect(velaJet?.deliveryTimeDays).toBeGreaterThan(hawthorneJet?.deliveryTimeDays ?? 0);
   });
 
+  it("validates starter airports and difficulty presets for the bootstrap layer", () => {
+    expect(starterAirports.length).toBeGreaterThan(0);
+    for (const airport of starterAirports) {
+      expect(airport.flags.startingAirportEligible).toBe(true);
+      expect(airport.flags.supportsFounderAircraft).toBe(true);
+      expect(airport.flags.isPlayable).toBe(true);
+    }
+
+    expect(difficultyPresets.map((preset) => preset.id)).toEqual([
+      "easy",
+      "standard",
+      "hard",
+      "realistic"
+    ]);
+
+    for (const preset of difficultyPresets) {
+      expect(() => difficultyPresetSchema.parse(preset)).not.toThrow();
+    }
+  });
+
   it("serializes and deserializes the sample save game", () => {
     const parsed = saveGameSchema.parse(sampleSaveGame);
     const roundTripped = saveGameSchema.parse(JSON.parse(JSON.stringify(parsed)));
+    const storyMessage = roundTripped.inboxMessages.find(
+      (message) => message.sender === "Maya Reyes"
+    );
 
     expect(roundTripped.id).toBe("save:cedar-valley-act1");
     expect(roundTripped.airline.name).toBe("Cedar Valley Air");
-    expect(roundTripped.inboxMessages[0]?.sender).toBe("Maya Reyes");
+    expect(storyMessage?.sender).toBe("Maya Reyes");
+    expect(roundTripped.founderProfile.name).toBe("Local Founder");
+    expect(roundTripped.simulationConfig.paused).toBe(true);
   });
 });

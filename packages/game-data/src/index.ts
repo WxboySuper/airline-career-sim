@@ -1,3 +1,5 @@
+import { buildAirportPipelineFromValidated, validateCuratedAirportExport } from "./airportPipeline";
+
 export type DataModuleStatus = "foundation-ready";
 
 export const dataModuleStatus: DataModuleStatus = "foundation-ready";
@@ -6,6 +8,19 @@ export * from "./airportPipeline";
 
 export const sampleSimulationPaces = [
   {
+    id: "manual",
+    displayName: "Manual",
+    realMinutesPerGameDay: 0.0001,
+    catchUpEnabled: false
+  },
+  {
+    id: "slow",
+    displayName: "Slow",
+    realMinutesPerGameDay: 120,
+    catchUpEnabled: true,
+    catchUpCapGameDays: 3
+  },
+  {
     id: "standard",
     displayName: "Standard",
     realMinutesPerGameDay: 60,
@@ -13,10 +28,11 @@ export const sampleSimulationPaces = [
     catchUpCapGameDays: 7
   },
   {
-    id: "manual",
-    displayName: "Manual",
-    realMinutesPerGameDay: 0.0001,
-    catchUpEnabled: false
+    id: "fast",
+    displayName: "Fast",
+    realMinutesPerGameDay: 30,
+    catchUpEnabled: true,
+    catchUpCapGameDays: 14
   }
 ];
 
@@ -61,7 +77,7 @@ export const curatedAirportStubs = [
     slotPressure: 10,
     feeLevel: 18,
     commercialViability: 44,
-    runwayClass: "standard",
+    runwayClass: "small",
     partnerPresence: 8,
     competitorPresence: 22,
     region: "Midwest",
@@ -83,7 +99,7 @@ export const curatedAirportStubs = [
     slotPressure: 5,
     feeLevel: 16,
     commercialViability: 36,
-    runwayClass: "standard",
+    runwayClass: "small",
     partnerPresence: 4,
     competitorPresence: 16,
     region: "Midwest",
@@ -92,6 +108,71 @@ export const curatedAirportStubs = [
     manualOverrides: []
   }
 ];
+
+export const sampleSaveAirports = curatedAirportStubs.map((airport) => ({
+  ...airport,
+  runwayClass:
+    airport.runwayClass === "tiny" || airport.runwayClass === "small"
+      ? "short"
+      : airport.runwayClass === "medium"
+        ? "regional"
+        : airport.runwayClass === "large"
+          ? "mainline"
+          : airport.runwayClass
+}));
+
+const starterAirportCuratedExport = validateCuratedAirportExport(
+  curatedAirportStubs.reduce<Record<string, unknown>>((records, airport) => {
+    records[airport.icao] = airport;
+    return records;
+  }, {})
+).airports;
+
+export const difficultyPresets = [
+  {
+    id: "easy",
+    displayName: "Easy",
+    startingCash: 180000,
+    maintenanceForgiveness: 15,
+    fuelCostMultiplier: 0.9,
+    reputationForgiveness: 10
+  },
+  {
+    id: "standard",
+    displayName: "Standard",
+    startingCash: 125000,
+    maintenanceForgiveness: 0,
+    fuelCostMultiplier: 1,
+    reputationForgiveness: 0
+  },
+  {
+    id: "hard",
+    displayName: "Hard",
+    startingCash: 90000,
+    maintenanceForgiveness: -5,
+    fuelCostMultiplier: 1.08,
+    reputationForgiveness: -5
+  },
+  {
+    id: "realistic",
+    displayName: "Realistic",
+    startingCash: 75000,
+    maintenanceForgiveness: -10,
+    fuelCostMultiplier: 1.15,
+    reputationForgiveness: -10
+  }
+] as const;
+
+export const starterAirportPipeline = buildAirportPipelineFromValidated(
+  rawAirportSourceStub,
+  starterAirportCuratedExport,
+  {
+    includeUnreviewed: true,
+    includePartial: true
+  }
+);
+
+export const starterAirports = starterAirportPipeline.airports;
 
 /**
  * Catalog of fictional aircraft manufacturers.
@@ -685,6 +766,22 @@ export const sampleContracts = [
 
 export const sampleInboxMessages = [
   {
+    id: "message:welcome-to-cedar-valley",
+    sender: "System",
+    senderRole: "system",
+    subject: "Welcome to Cedar Valley Air",
+    body: "Your new airline is set up. Start with a short, dependable route and keep the first aircraft close to home.",
+    category: "system",
+    createdAt: "2026-05-04T08:01:00.000-05:00",
+    read: false,
+    archived: false,
+    storyTags: ["act1", "setup"],
+    actionTarget: {
+      type: "view-objective",
+      targetId: "objective:operate-first-route"
+    }
+  },
+  {
     id: "message:first-route-first-risk",
     sender: "Maya Reyes",
     senderRole: "co-founder",
@@ -694,11 +791,42 @@ export const sampleInboxMessages = [
     createdAt: "2026-05-04T08:05:00.000-05:00",
     read: false,
     archived: false,
+    storyTags: ["act1", "route-planning"],
     relatedObjectiveId: "objective:operate-first-route",
-    relatedRouteId: "route:kalo-kmcw",
     actionTarget: {
-      type: "open-schedule-board",
-      targetId: "schedule:nc101as-weekly"
+      type: "open-route-planning"
+    }
+  },
+  {
+    id: "message:setup-checklist",
+    sender: "Dispatch",
+    senderRole: "dispatch",
+    subject: "Setup checklist",
+    body: "Pick a starter airport, confirm the aircraft assignment, and leave the clock paused until you are ready to run the first day.",
+    category: "operations",
+    createdAt: "2026-05-04T08:07:00.000-05:00",
+    read: false,
+    archived: false,
+    storyTags: ["act1", "setup"],
+    actionTarget: {
+      type: "open-route-planning"
+    }
+  },
+  {
+    id: "message:objective-hint",
+    sender: "Maya Reyes",
+    senderRole: "co-founder",
+    subject: "What we need first",
+    body: "Operate the first route, review the report, then keep the schedule boring enough that reliability becomes a habit.",
+    category: "story",
+    createdAt: "2026-05-04T08:10:00.000-05:00",
+    read: false,
+    archived: false,
+    storyTags: ["act1", "objective"],
+    relatedObjectiveId: "objective:operate-first-route",
+    actionTarget: {
+      type: "view-objective",
+      targetId: "objective:operate-first-route"
     }
   }
 ];
@@ -726,10 +854,76 @@ export const sampleReports = [
   }
 ];
 
+export const sampleFounderProfile = {
+  id: "founder:local-founder",
+  name: "Local Founder",
+  backgroundArchetype: "bootstrap-operator",
+  reputationModifier: 0,
+  financeModifier: 0
+};
+
+export const sampleSimulationConfig = {
+  simulationPaceId: "standard",
+  difficulty: "standard",
+  createdAt: "2026-05-04T08:00:00.000-05:00",
+  lastPlayedAt: "2026-05-04T08:00:00.000-05:00",
+  currentGameTime: "2026-05-04T08:00:00.000-05:00",
+  paused: true
+};
+
+export const sampleFinanceState = {
+  currentCash: 125000,
+  startingLoanBalance: 0,
+  recurringObligations: [
+    {
+      id: "obligation:maintenance-reserve",
+      label: "Maintenance reserve",
+      amount: 15000,
+      cadence: "monthly"
+    }
+  ],
+  maintenanceReserve: 15000,
+  transactionHistory: []
+};
+
+export const sampleObjectiveState = {
+  trackedObjectiveId: "objective:operate-first-route",
+  activeObjectiveIds: ["objective:operate-first-route"],
+  completedObjectiveIds: [],
+  objectiveProgressIds: ["objective-progress:operate-first-route"],
+  actId: "act1",
+  chapterId: "founder-operator",
+  storyFlags: ["act1-started"]
+};
+
+export const sampleStoryState = {
+  currentAct: "act1",
+  currentChapter: "founder-operator",
+  flags: ["act1-started"],
+  majorDecisions: [],
+  partnerRelationships: []
+};
+
+export const sampleInboxState = {
+  messageIds: sampleInboxMessages.map((message) => message.id),
+  unreadMessageIds: sampleInboxMessages
+    .filter((message) => !message.read)
+    .map((message) => message.id),
+  lastInboxSyncAt: "2026-05-04T08:10:00.000-05:00"
+};
+
 export const sampleAirline = {
   id: "airline:cedar-valley-air",
   name: "Cedar Valley Air",
+  shortName: "Cedar Valley",
+  callsign: "CEDAR VALLEY",
+  code: "CVA",
+  founderName: sampleFounderProfile.name,
+  foundedAt: "2026-05-04T08:00:00.000-05:00",
   homeAirportId: "airport:kalo",
+  primaryMarketArea: "Cedar Valley / Waterloo",
+  brandingSeed: "cedar-valley-air:airport:kalo:founder:local-founder",
+  status: "active",
   currentPhase: "founder-operator",
   cash: 125000,
   reputation: 5,
@@ -740,7 +934,7 @@ export const sampleAirline = {
   simulationPaceId: "standard",
   createdAt: "2026-05-04T08:00:00.000-05:00",
   lastSimulatedAt: "2026-05-04T08:00:00.000-05:00",
-  featureUnlocks: ["unlock:operations-report"],
+  featureUnlocks: [],
   activeTrackedObjectiveId: "objective:operate-first-route",
   aircraftIds: ["aircraft:nc101as"],
   routeIds: ["route:kalo-kmcw"],
@@ -751,13 +945,16 @@ export const sampleAirline = {
 export const sampleSaveGame = {
   id: "save:cedar-valley-act1",
   userId: "user:local-founder",
+  founderProfile: sampleFounderProfile,
   airline: sampleAirline,
+  simulationConfig: sampleSimulationConfig,
   currentGameTime: "2026-05-04T08:00:00.000-05:00",
   lastSimulatedAt: "2026-05-04T08:00:00.000-05:00",
-  simulationPace: sampleSimulationPaces[0],
+  simulationPace: sampleSimulationPaces[2],
+  financeState: sampleFinanceState,
   knownAirportIds: ["airport:kalo", "airport:kmcw"],
   unlockedAirportIds: ["airport:kalo", "airport:kmcw"],
-  airports: curatedAirportStubs,
+  airports: sampleSaveAirports,
   aircraftManufacturers: sampleManufacturers,
   aircraftTypes: sampleAircraftTypes,
   aircraft: sampleAircraft,
@@ -768,9 +965,12 @@ export const sampleSaveGame = {
   objectiveProgress: sampleObjectiveProgress,
   milestones: [],
   inboxMessages: sampleInboxMessages,
-  reports: sampleReports,
-  featureUnlocks: sampleFeatureUnlocks,
+  inboxState: sampleInboxState,
+  reports: [],
+  featureUnlocks: [],
   trackedObjectiveId: "objective:operate-first-route",
+  objectiveState: sampleObjectiveState,
+  storyState: sampleStoryState,
   settings: {
     difficulty: "standard",
     simulationPaceId: "standard",

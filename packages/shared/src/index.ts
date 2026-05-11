@@ -27,6 +27,7 @@ export type InboxMessageId = z.infer<typeof inboxMessageIdSchema>;
 export type ReportId = z.infer<typeof reportIdSchema>;
 export type SaveId = z.infer<typeof saveIdSchema>;
 export type FeatureUnlockId = z.infer<typeof featureUnlockIdSchema>;
+export type FounderId = z.infer<typeof founderIdSchema>;
 
 /**
  * Creates a Zod schema for a branded string ID with a specific prefix.
@@ -58,6 +59,7 @@ export const inboxMessageIdSchema = brandedIdSchema<"InboxMessageId">("message")
 export const reportIdSchema = brandedIdSchema<"ReportId">("report");
 export const saveIdSchema = brandedIdSchema<"SaveId">("save");
 export const featureUnlockIdSchema = brandedIdSchema<"FeatureUnlockId">("unlock");
+export const founderIdSchema = brandedIdSchema<"FounderId">("founder");
 
 const scoreSchema = z.number().int().min(0).max(100);
 const positiveMoneySchema = z.number().int().nonnegative();
@@ -76,8 +78,18 @@ export const careerPhaseSchema = z.enum([
 ]);
 export type CareerPhase = z.infer<typeof careerPhaseSchema>;
 
-export const difficultySchema = z.enum(["relaxed", "standard", "hard"]);
+export const difficultySchema = z.enum(["easy", "standard", "hard", "realistic"]);
 export type Difficulty = z.infer<typeof difficultySchema>;
+
+export const difficultyPresetSchema = z.object({
+  id: difficultySchema,
+  displayName: z.string().min(1),
+  startingCash: positiveMoneySchema,
+  maintenanceForgiveness: z.number().int(),
+  fuelCostMultiplier: z.number().positive(),
+  reputationForgiveness: z.number().int()
+});
+export type DifficultyPreset = z.infer<typeof difficultyPresetSchema>;
 
 export const featureUnlockSchema = z.object({
   id: featureUnlockIdSchema,
@@ -96,6 +108,69 @@ export const simulationPaceSchema = z.object({
   catchUpCapGameDays: z.number().int().positive().optional()
 });
 export type SimulationPace = z.infer<typeof simulationPaceSchema>;
+
+export const airlineStatusSchema = z.enum(["forming", "active", "paused", "retired"]);
+export type AirlineStatus = z.infer<typeof airlineStatusSchema>;
+
+export const airlineIdentitySchema = z.object({
+  id: airlineIdSchema,
+  name: z.string().min(1),
+  shortName: z.string().min(1),
+  callsign: z.string().min(1),
+  code: z.string().min(2).max(3),
+  founderName: z.string().min(1),
+  foundedAt: isoDateTimeSchema,
+  homeAirportId: airportIdSchema,
+  primaryMarketArea: z.string().min(1),
+  brandingSeed: z.string().min(1).optional(),
+  status: airlineStatusSchema
+});
+export type AirlineIdentity = z.infer<typeof airlineIdentitySchema>;
+
+export const founderProfileSchema = z.object({
+  id: founderIdSchema,
+  name: z.string().min(1),
+  backgroundArchetype: z.string().min(1).optional(),
+  reputationModifier: z.number().int().default(0),
+  financeModifier: z.number().int().default(0)
+});
+export type FounderProfile = z.infer<typeof founderProfileSchema>;
+
+export const simulationConfigSchema = z.object({
+  simulationPaceId: simulationPaceSchema.shape.id,
+  difficulty: difficultySchema,
+  createdAt: isoDateTimeSchema,
+  lastPlayedAt: isoDateTimeSchema,
+  currentGameTime: isoDateTimeSchema,
+  paused: z.boolean()
+});
+export type SimulationConfig = z.infer<typeof simulationConfigSchema>;
+
+export const storyStateSchema = z.object({
+  currentAct: z.string().min(1),
+  currentChapter: z.string().min(1),
+  flags: z.array(z.string().min(1)).default([]),
+  majorDecisions: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        decidedAt: isoDateTimeSchema.optional(),
+        notes: z.string().min(1).optional()
+      })
+    )
+    .default([]),
+  partnerRelationships: z
+    .array(
+      z.object({
+        partnerId: z.string().min(1),
+        status: z.string().min(1),
+        trust: scoreSchema
+      })
+    )
+    .default([])
+});
+export type StoryState = z.infer<typeof storyStateSchema>;
 
 export const rawAirportEntrySchema = z.object({
   icao: z.string().min(3).max(4),
@@ -310,10 +385,7 @@ export const aircraftInstanceSchema = z.object({
 });
 export type AircraftInstance = z.infer<typeof aircraftInstanceSchema>;
 
-export const airlineSchema = z.object({
-  id: airlineIdSchema,
-  name: z.string().min(1),
-  homeAirportId: airportIdSchema,
+export const airlineSchema = airlineIdentitySchema.extend({
   currentPhase: careerPhaseSchema,
   cash: moneySchema,
   reputation: scoreSchema,
@@ -424,6 +496,25 @@ export const cashTransactionSchema = z.object({
 });
 export type CashTransaction = z.infer<typeof cashTransactionSchema>;
 
+export const financeStateSchema = z.object({
+  currentCash: moneySchema,
+  startingLoanBalance: moneySchema.default(0),
+  recurringObligations: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        amount: moneySchema,
+        cadence: z.enum(["daily", "weekly", "monthly", "one-time"]),
+        dueAt: isoDateTimeSchema.optional()
+      })
+    )
+    .default([]),
+  maintenanceReserve: moneySchema.default(0),
+  transactionHistory: z.array(cashTransactionSchema).default([])
+});
+export type FinanceState = z.infer<typeof financeStateSchema>;
+
 export const dailyFinancialSummarySchema = z.object({
   date: z.string().date(),
   revenue: moneySchema,
@@ -482,6 +573,17 @@ export const objectiveProgressSchema = z.object({
   completedAt: isoDateTimeSchema.optional()
 });
 export type ObjectiveProgress = z.infer<typeof objectiveProgressSchema>;
+
+export const objectiveStateSchema = z.object({
+  trackedObjectiveId: objectiveIdSchema.optional(),
+  activeObjectiveIds: z.array(objectiveIdSchema).default([]),
+  completedObjectiveIds: z.array(objectiveIdSchema).default([]),
+  objectiveProgressIds: z.array(objectiveProgressIdSchema).default([]),
+  actId: z.string().min(1),
+  chapterId: z.string().min(1),
+  storyFlags: z.array(z.string().min(1)).default([])
+});
+export type ObjectiveState = z.infer<typeof objectiveStateSchema>;
 
 export const milestoneSchema = z.object({
   id: z.string().min(1),
@@ -559,6 +661,7 @@ export const inboxMessageSchema = z.object({
   relatedContractId: contractIdSchema.optional(),
   relatedRouteId: routeIdSchema.optional(),
   relatedAircraftId: aircraftInstanceIdSchema.optional(),
+  storyTags: z.array(z.string().min(1)).default([]),
   actionTarget: z
     .object({
       type: z.enum([
@@ -574,6 +677,13 @@ export const inboxMessageSchema = z.object({
   rewardUnlockId: featureUnlockIdSchema.optional()
 });
 export type InboxMessage = z.infer<typeof inboxMessageSchema>;
+
+export const inboxStateSchema = z.object({
+  messageIds: z.array(inboxMessageIdSchema).default([]),
+  unreadMessageIds: z.array(inboxMessageIdSchema).default([]),
+  lastInboxSyncAt: isoDateTimeSchema.optional()
+});
+export type InboxState = z.infer<typeof inboxStateSchema>;
 
 export const operationsReportSchema = z.object({
   id: reportIdSchema,
@@ -606,10 +716,13 @@ export type OperationsReport = z.infer<typeof operationsReportSchema>;
 export const saveGameSchema = z.object({
   id: saveIdSchema,
   userId: userIdSchema,
+  founderProfile: founderProfileSchema,
   airline: airlineSchema,
+  simulationConfig: simulationConfigSchema,
   currentGameTime: isoDateTimeSchema,
   lastSimulatedAt: isoDateTimeSchema,
   simulationPace: simulationPaceSchema,
+  financeState: financeStateSchema,
   knownAirportIds: z.array(airportIdSchema),
   unlockedAirportIds: z.array(airportIdSchema),
   airports: z.array(curatedAirportSchema),
@@ -623,9 +736,12 @@ export const saveGameSchema = z.object({
   objectiveProgress: z.array(objectiveProgressSchema),
   milestones: z.array(milestoneSchema).default([]),
   inboxMessages: z.array(inboxMessageSchema),
+  inboxState: inboxStateSchema,
   reports: z.array(operationsReportSchema),
   featureUnlocks: z.array(featureUnlockSchema),
   trackedObjectiveId: objectiveIdSchema.optional(),
+  objectiveState: objectiveStateSchema,
+  storyState: storyStateSchema,
   settings: z.object({
     difficulty: difficultySchema,
     simulationPaceId: simulationPaceSchema.shape.id,
