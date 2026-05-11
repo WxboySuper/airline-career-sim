@@ -41,6 +41,7 @@ import {
   sampleStoryState,
   sampleSaveAirports,
   starterAirports,
+  starterAirportPipeline,
   rawAirportSourceStub
 } from "./index";
 
@@ -74,8 +75,8 @@ describe("sample game data", () => {
     expect(starterAirports[0]?.flags.supportsFounderAircraft).toBe(true);
     for (const airport of sampleSaveAirports) {
       expect(() => curatedAirportSchema.parse(airport)).not.toThrow();
+      expect(airport.runwayClass).toBe("short");
     }
-    expect(sampleSaveAirports.map((airport) => airport.runwayClass)).toEqual(["short", "short"]);
     for (const manufacturer of sampleManufacturers) {
       expect(() => aircraftManufacturerSchema.parse(manufacturer)).not.toThrow();
     }
@@ -173,6 +174,7 @@ describe("sample game data", () => {
   });
 
   it("validates starter airports and difficulty presets for the bootstrap layer", () => {
+    console.log(JSON.stringify(starterAirportPipeline.diagnostics, null, 2));
     expect(starterAirports.length).toBeGreaterThan(0);
     for (const airport of starterAirports) {
       expect(airport.flags.startingAirportEligible).toBe(true);

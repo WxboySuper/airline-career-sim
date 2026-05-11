@@ -1,7 +1,6 @@
 import type {
   AcquisitionOption,
   AircraftCategory,
-  AircraftManufacturer,
   AircraftInstance,
   AircraftInstanceId,
   AircraftType,
@@ -27,7 +26,16 @@ import type {
   SaveGame
 } from "@airline-career-sim/shared";
 
-import { saveGameSchema } from "@airline-career-sim/shared";
+import { z } from "zod";
+import {
+  saveGameSchema,
+  aircraftManufacturerSchema,
+  aircraftTypeSchema,
+  difficultyPresetSchema,
+  inboxMessageSchema,
+  careerObjectiveSchema,
+  simulationPaceSchema
+} from "@airline-career-sim/shared";
 
 import {
   aircraftManufacturers as starterAircraftManufacturers,
@@ -40,18 +48,14 @@ import {
   sampleSimulationPaces as starterSimulationPaces,
   starterAirports as starterAirportCatalog
 } from "@airline-career-sim/game-data";
-import type { AppAirportRecord } from "@airline-career-sim/game-data";
 
-const starterAircraftManufacturersCatalog =
-  starterAircraftManufacturers as unknown as readonly AircraftManufacturer[];
-const starterAircraftTypesCatalog = starterAircraftTypes as unknown as readonly AircraftType[];
-const starterAirportCatalogEntries =
-  starterAirportCatalog as unknown as readonly AppAirportRecord[];
-const starterDifficultyPresetCatalog =
-  starterDifficultyPresets as unknown as readonly DifficultyPreset[];
-const starterInboxTemplateCatalog = starterInboxTemplates as unknown as readonly InboxMessage[];
-const starterObjectiveCatalog = starterObjectives as unknown as readonly CareerObjective[];
-const starterSimulationPaceCatalog = starterSimulationPaces as unknown as readonly SimulationPace[];
+const starterAircraftManufacturersCatalog = z.array(aircraftManufacturerSchema).parse(starterAircraftManufacturers);
+const starterAircraftTypesCatalog = z.array(aircraftTypeSchema).parse(starterAircraftTypes);
+const starterAirportCatalogEntries = starterAirportCatalog;
+const starterDifficultyPresetCatalog = z.array(difficultyPresetSchema).parse(starterDifficultyPresets);
+const starterInboxTemplateCatalog = z.array(inboxMessageSchema).parse(starterInboxTemplates);
+const starterObjectiveCatalog = z.array(careerObjectiveSchema).parse(starterObjectives);
+const starterSimulationPaceCatalog = z.array(simulationPaceSchema).parse(starterSimulationPaces);
 
 export type SimulationModuleStatus = "foundation-ready";
 
@@ -1170,8 +1174,7 @@ const deriveAirlineShortName = (airlineName: string) => {
 const deriveAirlineCode = (airlineName: string) => {
   const chars = airlineName.split("");
   const initials = chars
-    .filter((c) => /[a-z0-9]/i.test(c))
-    .map((c, i) => (i === 0 || chars[i - 1] === " " ? c : ""))
+    .map((c, i) => (/[a-z0-9]/i.test(c) && (i === 0 || chars[i - 1] === " ") ? c : ""))
     .join("")
     .toUpperCase();
 
@@ -1399,7 +1402,7 @@ const buildFounderProfile = (
 const buildStoryState = (objective: CareerObjective): StoryState => ({
   currentAct: "act1",
   currentChapter: "founder-operator",
-  flags: ["act1-started", `objective:${objective.id}`],
+  flags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`],
   majorDecisions: [],
   partnerRelationships: []
 });
@@ -1417,7 +1420,7 @@ const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
   objectiveProgressIds: [buildObjectiveProgressId(objective.id)],
   actId: "act1",
   chapterId: "founder-operator",
-  storyFlags: ["act1-started", `objective:${objective.id}`]
+  storyFlags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`]
 });
 
 /**

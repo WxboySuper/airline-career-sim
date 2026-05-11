@@ -206,7 +206,7 @@ describe("airline save bootstrap", () => {
     ) as NonNullable<(typeof aircraftTypes)[0]>;
     const starterAirport = starterAirports[0] as NonNullable<(typeof starterAirports)[0]>;
 
-    const testRunway = (runwayClass: never) =>
+    const testRunway = (runwayClass: CuratedRunwayClass) =>
       validateStarterAircraftEligibility(starterAircraftType, {
         ...starterAirport,
         curated: { ...starterAirport.curated, runwayClass }

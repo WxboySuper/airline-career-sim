@@ -78,9 +78,19 @@ export const careerPhaseSchema = z.enum([
 ]);
 export type CareerPhase = z.infer<typeof careerPhaseSchema>;
 
-export const difficultySchema = z.enum(["easy", "standard", "hard", "realistic"]);
+export const difficultySchema = z.preprocess(
+  (val) => (val === "relaxed" ? "easy" : val),
+  z.enum(["easy", "standard", "hard", "realistic"])
+);
 export type Difficulty = z.infer<typeof difficultySchema>;
 
+/**
+ * Defines a preset difficulty configuration for a save game.
+ *
+ * `maintenanceForgiveness` and `reputationForgiveness` use a sign convention
+ * where positive integers = more forgiving, and negative integers = harsher.
+ * Units are game-specific forgiveness points.
+ */
 export const difficultyPresetSchema = z.object({
   id: difficultySchema,
   displayName: z.string().min(1),

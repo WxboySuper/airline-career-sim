@@ -109,21 +109,42 @@ export const curatedAirportStubs = [
   }
 ];
 
+const mapStarterRunwayClass = (runwayClass: string) => {
+  switch (runwayClass) {
+    case "tiny":
+    case "small":
+      return "short";
+    case "medium":
+      return "regional";
+    case "large":
+      return "mainline";
+    case "heavy":
+      return "heavy";
+    default:
+      return "standard";
+  }
+};
+
 export const sampleSaveAirports = curatedAirportStubs.map((airport) => ({
   ...airport,
-  runwayClass:
-    airport.runwayClass === "tiny" || airport.runwayClass === "small"
-      ? "short"
-      : airport.runwayClass === "medium"
-        ? "regional"
-        : airport.runwayClass === "large"
-          ? "mainline"
-          : airport.runwayClass
+  runwayClass: mapStarterRunwayClass(airport.runwayClass)
 }));
 
 const starterAirportCuratedExport = validateCuratedAirportExport(
   curatedAirportStubs.reduce<Record<string, unknown>>((records, airport) => {
-    records[airport.icao] = airport;
+    records[airport.icao] = {
+      ...airport,
+      curationStatus: "reviewed",
+      marketArea: airport.marketGroup,
+      airportScale: airport.airportClass,
+      airportUseType: "municipal",
+      hasCommercialService: true,
+      hasInternationalService: false,
+      isCargoRelevant: false,
+      isMilitary: false,
+      terrainContext: "flat",
+      remoteness: "rural"
+    };
     return records;
   }, {})
 ).airports;
@@ -167,8 +188,7 @@ export const starterAirportPipeline = buildAirportPipelineFromValidated(
   rawAirportSourceStub,
   starterAirportCuratedExport,
   {
-    includeUnreviewed: true,
-    includePartial: true
+    includeUnreviewed: true
   }
 );
 

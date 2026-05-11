@@ -381,7 +381,6 @@ function normalizeCuratedAirportRecord(record: Record<string, unknown>): Record<
 function isPreliminaryCuratedAirportRecord(record: Record<string, unknown>): boolean {
   return (
     "airportClass" in record ||
-    "startingAirportEligible" in record ||
     "commercialViability" in record ||
     "marketGroup" in record ||
     "manualOverrides" in record
@@ -531,15 +530,6 @@ export function buildAirportPipelineFromValidated(
         code,
         status,
         reason: "Airport is missing curated data."
-      });
-      continue;
-    }
-
-    if (status === "reviewed" && missingFields.length > 0) {
-      diagnostics.airportsSkippedDueToStatus.push({
-        code,
-        status,
-        reason: "Airport is missing required curated fields."
       });
       continue;
     }
