@@ -49,10 +49,14 @@ import {
   starterAirports as starterAirportCatalog
 } from "@airline-career-sim/game-data";
 
-const starterAircraftManufacturersCatalog = z.array(aircraftManufacturerSchema).parse(starterAircraftManufacturers);
+const starterAircraftManufacturersCatalog = z
+  .array(aircraftManufacturerSchema)
+  .parse(starterAircraftManufacturers);
 const starterAircraftTypesCatalog = z.array(aircraftTypeSchema).parse(starterAircraftTypes);
 const starterAirportCatalogEntries = starterAirportCatalog;
-const starterDifficultyPresetCatalog = z.array(difficultyPresetSchema).parse(starterDifficultyPresets);
+const starterDifficultyPresetCatalog = z
+  .array(difficultyPresetSchema)
+  .parse(starterDifficultyPresets);
 const starterInboxTemplateCatalog = z.array(inboxMessageSchema).parse(starterInboxTemplates);
 const starterObjectiveCatalog = z.array(careerObjectiveSchema).parse(starterObjectives);
 const starterSimulationPaceCatalog = z.array(simulationPaceSchema).parse(starterSimulationPaces);
@@ -950,7 +954,7 @@ export type CreateNewAirlineSaveOptions = {
   paused?: boolean;
   airlineShortName?: string;
   airlineCallsign?: string;
-  airlineCode?: string;
+  airlineCode: string;
   primaryMarketArea?: string;
   brandingSeed?: string;
   founderBackgroundArchetype?: string;
@@ -1159,22 +1163,6 @@ const deriveAirlineShortName = (airlineName: string) => {
   const filteredWords = words.filter((word) => !suffixes.includes(word.toLowerCase()));
   const cleanedName = filteredWords.join(" ").trim();
   return cleanedName || airlineName.trim();
-};
-
-/**
- * Derives a default three-letter airline code from the airline name.
- *
- * @param airlineName - The full name of the airline.
- * @returns A 3-character uppercase ICAO-style code.
- */
-const deriveAirlineCode = (airlineName: string) => {
-  const chars = airlineName.split("");
-  const initials = chars
-    .map((c, i) => (/[a-z0-9]/i.test(c) && (i === 0 || chars[i - 1] === " ") ? c : ""))
-    .join("")
-    .toUpperCase();
-
-  return (initials || "AIR").slice(0, 3);
 };
 
 /**
@@ -1398,7 +1386,10 @@ const buildFounderProfile = (
 const buildStoryState = (objective: CareerObjective): StoryState => ({
   currentAct: "act1",
   currentChapter: "founder-operator",
-  flags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`],
+  flags: [
+    "act1-started",
+    objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`
+  ],
   majorDecisions: [],
   partnerRelationships: []
 });
@@ -1416,7 +1407,10 @@ const buildObjectiveState = (objective: CareerObjective): ObjectiveState => ({
   objectiveProgressIds: [buildObjectiveProgressId(objective.id)],
   actId: "act1",
   chapterId: "founder-operator",
-  storyFlags: ["act1-started", objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`]
+  storyFlags: [
+    "act1-started",
+    objective.id.startsWith("objective:") ? objective.id : `objective:${objective.id}`
+  ]
 });
 
 /**

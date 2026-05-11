@@ -109,6 +109,12 @@ export const curatedAirportStubs = [
   }
 ];
 
+/**
+ * Maps the detailed curated runway class to the broader aircraft capability class for test fixtures.
+ *
+ * @param runwayClass - The specific curated runway class (e.g., 'small', 'medium').
+ * @returns The general capability class for aircraft assignment (e.g., 'short', 'regional').
+ */
 const mapStarterRunwayClass = (runwayClass: string) => {
   switch (runwayClass) {
     case "tiny":
