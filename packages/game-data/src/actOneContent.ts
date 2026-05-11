@@ -175,6 +175,15 @@ const objectiveIds = [
   "objective:apply-for-scheduled-commuter-status"
 ] as const;
 
+/**
+ * Helper to build a consistent objective requirement placeholder.
+ *
+ * @param id - Unique requirement ID.
+ * @param type - The category of requirement (e.g., 'choose-route').
+ * @param description - Human-readable requirement text.
+ * @param targetValue - Optional target numeric value for the requirement.
+ * @returns A requirement data object.
+ */
 const placeholderRequirement = (
   id: string,
   type: CareerObjective["requirements"][number]["type"],
@@ -878,6 +887,13 @@ export type ActOneContentValidationIssue = {
   message: string;
 };
 
+/**
+ * Identifies duplicate IDs in a collection and adds issues to the provided list.
+ *
+ * @param ids - The list of IDs to check for duplicates.
+ * @param path - The diagnostic path for reporting issues.
+ * @param issues - The list of issues to append to.
+ */
 const addDuplicateIssues = (
   ids: readonly string[],
   path: string,
@@ -892,6 +908,14 @@ const addDuplicateIssues = (
   }
 };
 
+/**
+ * Adds a validation issue if a required reference is missing.
+ *
+ * @param exists - Boolean indicating if the reference exists.
+ * @param path - The diagnostic path for reporting issues.
+ * @param message - The error message to report if missing.
+ * @param issues - The list of issues to append to.
+ */
 const addMissingReferenceIssue = (
   exists: boolean,
   path: string,
@@ -903,11 +927,21 @@ const addMissingReferenceIssue = (
   }
 };
 
+/**
+ * Filters the feature unlock catalog for those available at the start of Act 1.
+ *
+ * @returns Array of starting feature unlocks.
+ */
 export const getActOneStartingFeatureUnlocks = () =>
   actOneFeatureUnlocks.filter((unlock) =>
     (actOneMetadata.startingFeatureUnlockIds as readonly string[]).includes(unlock.id)
   );
 
+/**
+ * Filters the inbox message catalog for those sent at the start of Act 1.
+ *
+ * @returns Array of initial inbox messages.
+ */
 export const getActOneInitialInboxMessages = () =>
   actOneInboxMessages.filter((message) =>
     (actOneInitialInboxMessageIds as readonly string[]).includes(message.id)
