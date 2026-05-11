@@ -1056,11 +1056,7 @@ export const validateStarterAircraftEligibility = (
 const slugify = (value: string) => {
   const chars = value.toLowerCase().split("");
   const filtered = chars.map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
-  return filtered
-    .join("")
-    .split("-")
-    .filter(Boolean)
-    .join("-");
+  return filtered.join("").split("-").filter(Boolean).join("-");
 };
 
 /**

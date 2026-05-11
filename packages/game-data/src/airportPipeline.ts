@@ -715,11 +715,7 @@ function skipReasonForStatus(
 function stableAirportId(icao: string): AirportId {
   const chars = icao.toLowerCase().split("");
   const filtered = chars.map((c) => (/[a-z0-9]/.test(c) ? c : "-"));
-  const slug = filtered
-    .join("")
-    .split("-")
-    .filter(Boolean)
-    .join("-");
+  const slug = filtered.join("").split("-").filter(Boolean).join("-");
   return airportIdSchema.parse(`airport:${slug || "unknown"}`) as unknown as AirportId;
 }
 
