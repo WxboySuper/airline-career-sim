@@ -33,7 +33,6 @@ import {
   createRoutePlan,
   createStartingAircraftInstance,
   createUsedAircraftInstance,
-  estimateBlockTimeMinutes,
   findAircraftById,
   getAirlineRoutes,
   isAircraftAllowedForAct1,
@@ -989,7 +988,7 @@ describe("game-core package", () => {
       aircraftInstanceId: save.aircraft[0].id
     });
 
-    const mockKcin: any = {
+    const mockKcin = {
       ...save.airports[0],
       id: "airport:kcin",
       icao: "KCIN",
@@ -997,7 +996,7 @@ describe("game-core package", () => {
       latitude: 42.0456,
       longitude: -94.789,
       runwayClass: "short"
-    };
+    } as unknown as CuratedAirport;
 
     const expandedSave = {
       ...save,

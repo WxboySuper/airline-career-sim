@@ -294,12 +294,33 @@ export const estimateBlockTimeMinutes = (
   taxiBufferMinutes = DEFAULT_TAXI_BUFFER_MINUTES
 ) => Math.ceil((distanceNm / cruiseSpeedKtas) * 60) + Math.max(0, Math.trunc(taxiBufferMinutes));
 
+/**
+ * Finds an airport in the save state by its ID.
+ *
+ * @param save - Save state to search.
+ * @param airportId - ID of the airport.
+ * @returns The airport record if found, otherwise undefined.
+ */
 const findAirport = (save: SaveGame, airportId: AirportId) =>
   save.airports.find((airport) => airport.id === airportId);
 
+/**
+ * Finds an aircraft instance in the save state by its ID.
+ *
+ * @param save - Save state to search.
+ * @param aircraftId - ID of the aircraft instance.
+ * @returns The aircraft instance if found, otherwise undefined.
+ */
 const findAircraftInstance = (save: SaveGame, aircraftId: AircraftInstanceId) =>
   save.aircraft.find((aircraft) => aircraft.id === aircraftId);
 
+/**
+ * Resolves the aircraft type for a given aircraft instance.
+ *
+ * @param save - Save state containing aircraft and types.
+ * @param aircraftId - ID of the aircraft instance.
+ * @returns The aircraft type if resolved, otherwise undefined.
+ */
 const findAircraftTypeForInstance = (save: SaveGame, aircraftId: AircraftInstanceId) => {
   const instance = findAircraftInstance(save, aircraftId);
   if (!instance) {
@@ -308,18 +329,38 @@ const findAircraftTypeForInstance = (save: SaveGame, aircraftId: AircraftInstanc
   return findAircraftById(save.aircraftTypes, instance.aircraftTypeId);
 };
 
+/**
+ * Generates a deterministic route ID from origin and destination airports.
+ *
+ * @param originAirportId - Origin airport ID.
+ * @param destinationAirportId - Destination airport ID.
+ * @returns Branded RouteId.
+ */
 const routeIdFor = (originAirportId: AirportId, destinationAirportId: AirportId) =>
   `route:${originAirportId.replace(/^airport:/, "")}-${destinationAirportId.replace(
     /^airport:/,
     ""
   )}` as RouteId;
 
+/**
+ * Generates a deterministic schedule ID for an aircraft and route pairing.
+ *
+ * @param aircraftId - Aircraft instance ID.
+ * @param routeId - Route ID.
+ * @returns Branded ScheduleId.
+ */
 const scheduleIdFor = (aircraftId: AircraftInstanceId, routeId: RouteId) =>
   `schedule:${aircraftId.replace(/^aircraft:/, "")}-${routeId.replace(
     /^route:/,
     ""
   )}` as ScheduleId;
 
+/**
+ * Parses an HH:MM time string into total minutes since midnight.
+ *
+ * @param time - 24-hour time string.
+ * @returns Minutes since midnight, or undefined if invalid.
+ */
 const toMinutes = (time: string) => {
   const match = /^(\d{2}):(\d{2})$/.exec(time);
   if (!match) {
@@ -333,6 +374,12 @@ const toMinutes = (time: string) => {
   return hours * 60 + minutes;
 };
 
+/**
+ * Formats total minutes since midnight into an HH:MM string.
+ *
+ * @param minutes - Minutes since midnight.
+ * @returns 24-hour time string.
+ */
 const fromMinutes = (minutes: number) => {
   const normalized = ((minutes % 1440) + 1440) % 1440;
   const hours = Math.floor(normalized / 60)
@@ -342,6 +389,12 @@ const fromMinutes = (minutes: number) => {
   return `${hours}:${minutePart}`;
 };
 
+/**
+ * Determines the current route limit based on airline unlocks.
+ *
+ * @param save - Save state to check.
+ * @returns The integer route limit.
+ */
 const getExpandedRouteLimit = (save: SaveGame) =>
   save.airline.featureUnlocks.some((unlockId) => unlockId === "unlock:second-route-permission")
     ? ACT_ONE_EXPANDED_ROUTE_LIMIT
