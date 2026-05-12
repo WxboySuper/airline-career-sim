@@ -34,6 +34,7 @@ import {
   createStartingAircraftInstance,
   createUsedAircraftInstance,
   findAircraftById,
+  getActiveRoutes,
   getAirlineRoutes,
   isAircraftAllowedForAct1,
   isRunwayCompatible,
@@ -758,6 +759,7 @@ describe("game-core package", () => {
     expect(updated.value.routes).toHaveLength(1);
     expect(updated.value.airline.routeIds).toEqual([plan.value.id]);
     expect(getAirlineRoutes(updated.value)).toHaveLength(1);
+    expect(getActiveRoutes(updated.value)).toHaveLength(0); // status is "planned", not "active"
     expect(canAddRouteForCurrentAct(updated.value).allowed).toBe(false);
     expect(
       createRoutePlan(updated.value, {
@@ -1110,5 +1112,90 @@ describe("game-core package", () => {
         turnTimeMinutes: 30
       })
     ).toMatchObject({ ok: false });
+  });
+
+  it("exercises exhaustive route validation edge cases", () => {
+    const save = buildStarterSave();
+    const homeId = save.airline.homeAirportId;
+    const otherId = "airport:kmcw" as AirportId;
+    const aircraftId = save.aircraft[0].id;
+
+    // 1. Identical airports
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: homeId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "route-airports-identical" }));
+
+    // 2. Excluded airports
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId,
+      excludedAirportIds: [otherId]
+    }).errors).toContainEqual(expect.objectContaining({ code: "destination-airport-excluded" }));
+
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId,
+      excludedAirportIds: [homeId]
+    }).errors).toContainEqual(expect.objectContaining({ code: "origin-airport-excluded" }));
+
+    // 3. Locked airports
+    const lockedSave = { ...save, unlockedAirportIds: [homeId] };
+    expect(createRoutePlan(lockedSave, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "destination-airport-locked" }));
+
+    // 4. Playable airports mismatch
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId,
+      playableAirportIds: [homeId]
+    }).errors).toContainEqual(expect.objectContaining({ code: "destination-airport-not-app-ready" }));
+
+    // 5. Unsupported route type
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId,
+      routeType: "charter" as Route["routeType"]
+    }).errors).toContainEqual(expect.objectContaining({ code: "route-type-not-supported-yet" }));
+
+    // 6. First route home airport requirement
+    const emptySave = { ...save, routes: [] };
+    expect(createRoutePlan(emptySave, {
+      originAirportId: otherId,
+      destinationAirportId: homeId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "first-route-must-use-home-airport" }));
+
+    // 7. Aircraft range check
+    const longDistanceSave = {
+      ...save,
+      airports: save.airports.map(a => a.id === otherId ? { ...a, latitude: 0, longitude: 0 } : a)
+    };
+    expect(createRoutePlan(longDistanceSave, {
+      originAirportId: homeId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "aircraft-range-too-short" }));
+
+    // 8. Missing airports
+    expect(createRoutePlan(save, {
+      originAirportId: "airport:missing" as AirportId,
+      destinationAirportId: otherId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "origin-airport-missing" }));
+
+    expect(createRoutePlan(save, {
+      originAirportId: homeId,
+      destinationAirportId: "airport:missing" as AirportId,
+      aircraftInstanceId: aircraftId
+    }).errors).toContainEqual(expect.objectContaining({ code: "destination-airport-missing" }));
   });
 });

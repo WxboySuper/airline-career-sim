@@ -221,7 +221,20 @@ export type GameplayResult<TValue> =
   | { ok: true; value: TValue }
   | { ok: false; errors: GameplayValidationError[] };
 
+/**
+ * Wraps a value in a successful GameplayResult.
+ *
+ * @param value - Value to wrap.
+ * @returns Successful result.
+ */
 const ok = <TValue>(value: TValue): GameplayResult<TValue> => ({ ok: true, value });
+
+/**
+ * Creates a failed GameplayResult from one or more validation errors.
+ *
+ * @param errors - Validation errors.
+ * @returns Failed result.
+ */
 const fail = <TValue = never>(...errors: GameplayValidationError[]): GameplayResult<TValue> => ({
   ok: false,
   errors
@@ -470,18 +483,19 @@ export const checkAircraftRouteSuitability = (
 };
 
 /**
- * Creates a validated scheduled route plan for the early Act 1 loop.
+ * Validates basic airport existence and identity for a new route.
  *
- * @param save - Save state supplying airports, unlocks, airline, and aircraft.
  * @param input - Route plan request.
- * @returns Structured success with a route record or actionable validation errors.
+ * @param origin - Resolved origin airport.
+ * @param destination - Resolved destination airport.
+ * @param errors - Error collection to append to.
  */
-export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): GameplayResult<Route> => {
-  const errors: GameplayValidationError[] = [];
-  const origin = findAirport(save, input.originAirportId);
-  const destination = findAirport(save, input.destinationAirportId);
-  const routeType = input.routeType ?? "scheduled";
-
+const validateRouteAirports = (
+  input: RoutePlanInput,
+  origin: CuratedAirport | undefined,
+  destination: CuratedAirport | undefined,
+  errors: GameplayValidationError[]
+) => {
   if (!origin) {
     errors.push({
       code: "origin-airport-missing",
@@ -518,6 +532,20 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
       entityId: input.destinationAirportId
     });
   }
+};
+
+/**
+ * Validates gameplay constraints like availability and app-readiness.
+ *
+ * @param save - Current save state.
+ * @param input - Route plan request.
+ * @param errors - Error collection to append to.
+ */
+const validateRouteConstraints = (
+  save: SaveGame,
+  input: RoutePlanInput,
+  errors: GameplayValidationError[]
+) => {
   if (input.playableAirportIds && !input.playableAirportIds.includes(input.originAirportId)) {
     errors.push({
       code: "origin-airport-not-app-ready",
@@ -552,6 +580,22 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
       message: "The first scheduled route must originate from the airline home airport."
     });
   }
+};
+
+/**
+ * Enforces Act 1 specific business rules for route creation.
+ *
+ * @param save - Current save state.
+ * @param input - Route plan request.
+ * @param routeType - Normalized route type.
+ * @param errors - Error collection to append to.
+ */
+const validateActOneRouteRules = (
+  save: SaveGame,
+  input: RoutePlanInput,
+  routeType: Route["routeType"],
+  errors: GameplayValidationError[]
+) => {
   if (
     routeType === "scheduled" &&
     save.airline.currentPhase === "founder-operator" &&
@@ -575,6 +619,24 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
       message: "Act 1 scheduled route limit has been reached."
     });
   }
+};
+
+/**
+ * Creates a validated scheduled route plan for the early Act 1 loop.
+ *
+ * @param save - Save state supplying airports, unlocks, airline, and aircraft.
+ * @param input - Route plan request.
+ * @returns Structured success with a route record or actionable validation errors.
+ */
+export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): GameplayResult<Route> => {
+  const errors: GameplayValidationError[] = [];
+  const origin = findAirport(save, input.originAirportId);
+  const destination = findAirport(save, input.destinationAirportId);
+  const routeType = input.routeType ?? "scheduled";
+
+  validateRouteAirports(input, origin, destination, errors);
+  validateRouteConstraints(save, input, errors);
+  validateActOneRouteRules(save, input, routeType, errors);
 
   const aircraftType = findAircraftTypeForInstance(save, input.aircraftInstanceId);
   if (!aircraftType) {
@@ -589,16 +651,13 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
     return fail(...errors);
   }
 
-  const distance = calculateAirportDistanceNm(origin, destination);
-  if (!distance.ok) {
-    return distance;
+  const distanceResult = calculateAirportDistanceNm(origin, destination);
+  if (!distanceResult.ok) {
+    return distanceResult;
   }
-  const suitability = checkAircraftRouteSuitability(
-    aircraftType,
-    distance.value,
-    origin,
-    destination
-  );
+  const distance = distanceResult.value;
+
+  const suitability = checkAircraftRouteSuitability(aircraftType, distance, origin, destination);
   if (!suitability.ok) {
     return suitability;
   }
@@ -617,7 +676,7 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
     airlineId: save.airline.id as AirlineId,
     originAirportId: origin.id,
     destinationAirportId: destination.id,
-    distanceNm: distance.value,
+    distanceNm: distance,
     status: "planned",
     routeType,
     fare: input.fare ?? DEFAULT_ROUTE_FARE,
@@ -628,9 +687,7 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
       connectingDemand: 0
     },
     marketPlaceholder: {
-      localPassengerInterest: Math.round(
-        (origin.localDemandRating + destination.localDemandRating) / 2
-      ),
+      localPassengerInterest: Math.round((origin.localDemandRating + destination.localDemandRating) / 2),
       businessTravelShare: Math.round(
         (origin.businessDemandRating + destination.businessDemandRating) / 2
       ),
@@ -983,6 +1040,20 @@ export type ActOneRequirementCheck = {
   relatedScheduleIds: ScheduleId[];
 };
 
+/**
+ * Finds the objective ID associated with a specific requirement type.
+ *
+ * @param save - Save state to search.
+ * @param requirementType - Type of requirement to find.
+ * @returns Objective ID if found, otherwise undefined.
+ */
+/**
+ * Finds the objective ID associated with a specific requirement type.
+ *
+ * @param save - Save state to search.
+ * @param requirementType - Type of requirement to find.
+ * @returns Objective ID if found, otherwise undefined.
+ */
 const objectiveIdByRequirementType = (
   save: SaveGame,
   requirementType: CareerObjective["requirements"][number]["type"]
