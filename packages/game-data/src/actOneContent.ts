@@ -929,23 +929,35 @@ const addMissingReferenceIssue = (
 
 /**
  * Filters the feature unlock catalog for those available at the start of Act 1.
+ * Preserves the ordering defined in the actOneMetadata.startingFeatureUnlockIds list.
  *
  * @returns Array of starting feature unlocks.
+ * @throws Error if a referenced starting feature unlock ID is missing from the catalog.
  */
 export const getActOneStartingFeatureUnlocks = () =>
-  actOneFeatureUnlocks.filter((unlock) =>
-    (actOneMetadata.startingFeatureUnlockIds as readonly string[]).includes(unlock.id)
-  );
+  actOneMetadata.startingFeatureUnlockIds.map((id) => {
+    const unlock = actOneFeatureUnlocks.find((u) => u.id === id);
+    if (!unlock) {
+      throw new Error(`Starting feature unlock ID missing from catalog: ${id}`);
+    }
+    return unlock;
+  });
 
 /**
  * Filters the inbox message catalog for those sent at the start of Act 1.
+ * Preserves the ordering defined in the actOneInitialInboxMessageIds list.
  *
  * @returns Array of initial inbox messages.
+ * @throws Error if a referenced initial inbox message ID is missing from the catalog.
  */
 export const getActOneInitialInboxMessages = () =>
-  actOneInboxMessages.filter((message) =>
-    (actOneInitialInboxMessageIds as readonly string[]).includes(message.id)
-  );
+  actOneInitialInboxMessageIds.map((id) => {
+    const message = actOneInboxMessages.find((m) => m.id === id);
+    if (!message) {
+      throw new Error(`Initial inbox message ID missing from catalog: ${id}`);
+    }
+    return message;
+  });
 
 /**
  * Validates Act 1 content schemas and cross-references.
@@ -992,6 +1004,11 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
   }
 
   addDuplicateIssues(
+    actOneFeatureUnlocks.map((unlock) => unlock.id),
+    "actOneFeatureUnlocks",
+    issues
+  );
+  addDuplicateIssues(
     actOneObjectives.map((objective) => objective.id),
     "actOneObjectives",
     issues
@@ -1023,6 +1040,15 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
       unlockIdsSet.has(id),
       `actOneMetadata.startingFeatureUnlockIds.${id}`,
       "Starting feature unlock must exist.",
+      issues
+    );
+  }
+
+  for (const id of actOneInitialInboxMessageIds) {
+    addMissingReferenceIssue(
+      messageIdsSet.has(id),
+      `actOneInitialInboxMessageIds.${id}`,
+      "Initial inbox message must exist.",
       issues
     );
   }
