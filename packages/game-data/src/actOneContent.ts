@@ -960,13 +960,11 @@ export const getActOneInitialInboxMessages = () =>
   });
 
 /**
- * Validates Act 1 content schemas and cross-references.
+ * Validates the Zod schemas for all Act 1 content catalogs.
  *
- * @returns A list of content validation issues. Empty means the content is consistent.
+ * @param issues - The list of issues to append to.
  */
-export const validateActOneContent = (): ActOneContentValidationIssue[] => {
-  const issues: ActOneContentValidationIssue[] = [];
-
+const validateActOneSchemas = (issues: ActOneContentValidationIssue[]) => {
   const parsedMetadata = actMetadataSchema.safeParse(actOneMetadata);
   if (!parsedMetadata.success) {
     issues.push({ path: "actOneMetadata", message: parsedMetadata.error.message });
@@ -1002,7 +1000,14 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
       });
     }
   }
+};
 
+/**
+ * Validates that all IDs in Act 1 catalogs are unique.
+ *
+ * @param issues - The list of issues to append to.
+ */
+const validateActOneUniqueness = (issues: ActOneContentValidationIssue[]) => {
   addDuplicateIssues(
     actOneFeatureUnlocks.map((unlock) => unlock.id),
     "actOneFeatureUnlocks",
@@ -1023,13 +1028,26 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
     "actOnePrivateContractTemplates",
     issues
   );
+};
 
-  const objectiveIdsSet = new Set<string>(actOneObjectives.map((objective) => objective.id));
-  const unlockIdsSet = new Set<string>(actOneFeatureUnlocks.map((unlock) => unlock.id));
-  const messageIdsSet = new Set<string>(actOneInboxMessages.map((message) => message.id));
+type ContentLookupSets = {
+  objectiveIds: ReadonlySet<string>;
+  unlockIds: ReadonlySet<string>;
+  messageIds: ReadonlySet<string>;
+};
 
+/**
+ * Validates references from Act 1 metadata and initial lists.
+ *
+ * @param issues - The list of issues to append to.
+ * @param sets - Lookup sets for reference validation.
+ */
+const validateActOneMetadataReferences = (
+  issues: ActOneContentValidationIssue[],
+  sets: ContentLookupSets
+) => {
   addMissingReferenceIssue(
-    objectiveIdsSet.has(ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID),
+    sets.objectiveIds.has(ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID),
     "ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID",
     "Default tracked objective must exist.",
     issues
@@ -1037,7 +1055,7 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
   for (const id of actOneMetadata.startingFeatureUnlockIds) {
     addMissingReferenceIssue(
-      unlockIdsSet.has(id),
+      sets.unlockIds.has(id),
       `actOneMetadata.startingFeatureUnlockIds.${id}`,
       "Starting feature unlock must exist.",
       issues
@@ -1046,17 +1064,28 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
   for (const id of actOneInitialInboxMessageIds) {
     addMissingReferenceIssue(
-      messageIdsSet.has(id),
+      sets.messageIds.has(id),
       `actOneInitialInboxMessageIds.${id}`,
       "Initial inbox message must exist.",
       issues
     );
   }
+};
 
+/**
+ * Validates cross-references within the Act 1 objective catalog.
+ *
+ * @param issues - The list of issues to append to.
+ * @param sets - Lookup sets for reference validation.
+ */
+const validateActOneObjectiveReferences = (
+  issues: ActOneContentValidationIssue[],
+  sets: ContentLookupSets
+) => {
   for (const objective of actOneObjectives) {
     if ("nextObjectiveId" in objective && objective.nextObjectiveId) {
       addMissingReferenceIssue(
-        objectiveIdsSet.has(objective.nextObjectiveId),
+        sets.objectiveIds.has(objective.nextObjectiveId),
         `actOneObjectives.${objective.id}.nextObjectiveId`,
         "Next objective must exist.",
         issues
@@ -1065,7 +1094,7 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
     for (const id of objective.rewards.nextObjectiveIds) {
       addMissingReferenceIssue(
-        objectiveIdsSet.has(id),
+        sets.objectiveIds.has(id),
         `actOneObjectives.${objective.id}.rewards.nextObjectiveIds`,
         `Reward next objective must exist: ${id}`,
         issues
@@ -1074,7 +1103,7 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
     for (const id of objective.rewards.unlockIds) {
       addMissingReferenceIssue(
-        unlockIdsSet.has(id),
+        sets.unlockIds.has(id),
         `actOneObjectives.${objective.id}.rewards.unlockIds`,
         `Reward unlock must exist: ${id}`,
         issues
@@ -1083,7 +1112,7 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
     for (const id of objective.relatedFeatureUnlockIds) {
       addMissingReferenceIssue(
-        unlockIdsSet.has(id),
+        sets.unlockIds.has(id),
         `actOneObjectives.${objective.id}.relatedFeatureUnlockIds`,
         `Related feature unlock must exist: ${id}`,
         issues
@@ -1092,18 +1121,29 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
     for (const id of objective.relatedInboxMessageIds) {
       addMissingReferenceIssue(
-        messageIdsSet.has(id),
+        sets.messageIds.has(id),
         `actOneObjectives.${objective.id}.relatedInboxMessageIds`,
         `Related inbox message must exist: ${id}`,
         issues
       );
     }
   }
+};
 
+/**
+ * Validates cross-references within the Act 1 inbox message catalog.
+ *
+ * @param issues - The list of issues to append to.
+ * @param sets - Lookup sets for reference validation.
+ */
+const validateActOneMessageReferences = (
+  issues: ActOneContentValidationIssue[],
+  sets: ContentLookupSets
+) => {
   for (const message of actOneInboxMessages) {
     if (message.relatedObjectiveId) {
       addMissingReferenceIssue(
-        objectiveIdsSet.has(message.relatedObjectiveId),
+        sets.objectiveIds.has(message.relatedObjectiveId),
         `actOneInboxMessages.${message.id}.relatedObjectiveId`,
         "Message related objective must exist.",
         issues
@@ -1111,18 +1151,29 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
     }
     if ("rewardUnlockId" in message && message.rewardUnlockId) {
       addMissingReferenceIssue(
-        unlockIdsSet.has(message.rewardUnlockId),
+        sets.unlockIds.has(message.rewardUnlockId),
         `actOneInboxMessages.${message.id}.rewardUnlockId`,
         "Message reward unlock must exist.",
         issues
       );
     }
   }
+};
 
+/**
+ * Validates cross-references within the Act 1 private contract templates.
+ *
+ * @param issues - The list of issues to append to.
+ * @param sets - Lookup sets for reference validation.
+ */
+const validateActOneContractReferences = (
+  issues: ActOneContentValidationIssue[],
+  sets: ContentLookupSets
+) => {
   for (const contract of actOnePrivateContractTemplates) {
     if (contract.relatedFeatureUnlockId) {
       addMissingReferenceIssue(
-        unlockIdsSet.has(contract.relatedFeatureUnlockId),
+        sets.unlockIds.has(contract.relatedFeatureUnlockId),
         `actOnePrivateContractTemplates.${contract.id}.relatedFeatureUnlockId`,
         "Contract related feature unlock must exist.",
         issues
@@ -1130,13 +1181,37 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
     }
     if (contract.trackableObjectiveId) {
       addMissingReferenceIssue(
-        objectiveIdsSet.has(contract.trackableObjectiveId),
+        sets.objectiveIds.has(contract.trackableObjectiveId),
         `actOnePrivateContractTemplates.${contract.id}.trackableObjectiveId`,
         "Contract trackable objective must exist.",
         issues
       );
     }
   }
+};
+
+/**
+ * Validates Act 1 content schemas and cross-references.
+ *
+ * @returns A list of content validation issues. Empty means the content is consistent.
+ */
+export const validateActOneContent = (): ActOneContentValidationIssue[] => {
+  const issues: ActOneContentValidationIssue[] = [];
+
+  validateActOneSchemas(issues);
+  validateActOneUniqueness(issues);
+
+  const sets: ContentLookupSets = {
+    objectiveIds: new Set<string>(actOneObjectives.map((obj) => obj.id)),
+    unlockIds: new Set<string>(actOneFeatureUnlocks.map((unlock) => unlock.id)),
+    messageIds: new Set<string>(actOneInboxMessages.map((msg) => msg.id))
+  };
+
+  validateActOneMetadataReferences(issues, sets);
+  validateActOneObjectiveReferences(issues, sets);
+  validateActOneMessageReferences(issues, sets);
+  validateActOneContractReferences(issues, sets);
 
   return issues;
 };
+
