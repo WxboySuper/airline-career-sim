@@ -105,10 +105,30 @@ export const featureUnlockSchema = z.object({
   id: featureUnlockIdSchema,
   name: z.string().min(1),
   description: z.string().min(1),
+  actId: z.string().min(1).optional(),
+  category: z
+    .enum(["workspace", "operations", "progression", "contracts", "finance", "maintenance"])
+    .optional(),
+  initiallyAvailable: z.boolean().optional(),
+  unlockOrder: z.number().int().nonnegative().optional(),
   unlockedAt: isoDateTimeSchema.optional(),
   sourceObjectiveId: objectiveIdSchema.optional()
 });
 export type FeatureUnlock = z.infer<typeof featureUnlockSchema>;
+
+export const actMetadataSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  shortDescription: z.string().min(1),
+  longDescription: z.string().min(1),
+  startingFeatureUnlockIds: z.array(featureUnlockIdSchema),
+  completionCriteriaSummary: z.string().min(1),
+  transitionTarget: z.object({
+    actId: z.string().min(1),
+    displayName: z.string().min(1)
+  })
+});
+export type ActMetadata = z.infer<typeof actMetadataSchema>;
 
 export const simulationPaceSchema = z.object({
   id: z.enum(["manual", "slow", "standard", "fast"]),
@@ -537,6 +557,9 @@ export type DailyFinancialSummary = z.infer<typeof dailyFinancialSummarySchema>;
 export const objectiveRequirementSchema = z.object({
   id: z.string().min(1),
   type: z.enum([
+    "choose-route",
+    "build-schedule",
+    "run-operating-period",
     "carry-passengers",
     "operate-routes",
     "maintain-reliability",
@@ -544,6 +567,8 @@ export const objectiveRequirementSchema = z.object({
     "complete-contract",
     "review-report",
     "use-catch-up",
+    "review-finance",
+    "review-maintenance",
     "apply-for-certification"
   ]),
   targetValue: z.number().nonnegative().optional(),
@@ -566,9 +591,19 @@ export const careerObjectiveSchema = z.object({
   id: objectiveIdSchema,
   title: z.string().min(1),
   description: z.string().min(1),
+  actId: z.string().min(1).optional(),
+  order: z.number().int().nonnegative().optional(),
+  objectiveType: z
+    .enum(["main-story", "career", "private-contract", "certification", "finance", "maintenance"])
+    .optional(),
   phase: careerPhaseSchema,
   requirements: z.array(objectiveRequirementSchema),
   rewards: objectiveRewardSchema,
+  relatedFeatureUnlockIds: z.array(featureUnlockIdSchema).default([]),
+  relatedInboxMessageIds: z.array(inboxMessageIdSchema).default([]),
+  trackable: z.boolean().default(true),
+  completionSummary: z.string().min(1).optional(),
+  nextObjectiveId: objectiveIdSchema.optional(),
   milestoneIds: z.array(z.string().min(1)).default([]),
   visible: z.boolean()
 });
@@ -623,8 +658,15 @@ export const contractSchema = z.object({
   id: contractIdSchema,
   type: z.enum(["private", "operational", "subsidy", "partner"]),
   title: z.string().min(1),
+  description: z.string().min(1).optional(),
   client: z.string().min(1),
   sender: z.string().min(1),
+  actId: z.string().min(1).optional(),
+  trackable: z.boolean().optional(),
+  riskLevel: z.enum(["low", "moderate", "high"]).optional(),
+  window: z.string().min(1).optional(),
+  relatedFeatureUnlockId: featureUnlockIdSchema.optional(),
+  suggestedAirportDependency: z.string().min(1).optional(),
   relatedRouteId: routeIdSchema.optional(),
   relatedAirportIds: z.array(airportIdSchema).default([]),
   requirements: z.array(contractRequirementSchema),
@@ -667,6 +709,7 @@ export const inboxMessageSchema = z.object({
   createdAt: isoDateTimeSchema,
   read: z.boolean(),
   archived: z.boolean(),
+  trigger: z.string().min(1).optional(),
   relatedObjectiveId: objectiveIdSchema.optional(),
   relatedContractId: contractIdSchema.optional(),
   relatedRouteId: routeIdSchema.optional(),
@@ -679,7 +722,11 @@ export const inboxMessageSchema = z.object({
         "open-schedule-board",
         "view-contract",
         "view-report",
-        "view-objective"
+        "view-objective",
+        "view-inbox",
+        "view-finance",
+        "view-maintenance",
+        "view-certification"
       ]),
       targetId: z.string().min(1).optional()
     })

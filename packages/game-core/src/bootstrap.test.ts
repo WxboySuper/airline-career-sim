@@ -33,9 +33,19 @@ describe("airline save bootstrap", () => {
     expect(parsed.routes).toHaveLength(0);
     expect(parsed.schedules).toHaveLength(0);
     expect(parsed.contracts).toHaveLength(0);
-    expect(parsed.inboxMessages).toHaveLength(4);
-    expect(parsed.objectiveState.activeObjectiveIds).toEqual(["objective:operate-first-route"]);
+    expect(parsed.inboxMessages).toHaveLength(2);
+    expect(parsed.objectiveState.activeObjectiveIds).toEqual(["objective:choose-first-route"]);
     expect(parsed.storyState.currentAct).toBe("act1");
+    expect(parsed.airline.featureUnlocks).toEqual([
+      "unlock:basic-dashboard",
+      "unlock:inbox",
+      "unlock:simplified-route-planning",
+      "unlock:simplified-schedule-board",
+      "unlock:pause-resume-controls"
+    ]);
+    expect(parsed.featureUnlocks.map((unlock) => unlock.id)).toContain(
+      "unlock:commuter-certification-path"
+    );
     expect(parsed.financeState.currentCash).toBe(125000);
     expect(parsed.simulationConfig.paused).toBe(true);
   });
@@ -92,17 +102,19 @@ describe("airline save bootstrap", () => {
     const save = createNewAirlineSave(baseOptions);
 
     expect(save.inboxMessages.map((message) => message.sender)).toEqual([
-      "System",
       "Maya Reyes",
-      "Dispatch",
       "Maya Reyes"
     ]);
     expect(save.inboxMessages.every((message) => message.read === false)).toBe(true);
     expect(save.inboxState.messageIds).toEqual(save.inboxMessages.map((message) => message.id));
-    expect(save.objectiveState.trackedObjectiveId).toBe("objective:operate-first-route");
-    expect(save.objectiveState.activeObjectiveIds).toEqual(["objective:operate-first-route"]);
+    expect(save.inboxMessages.map((message) => message.id)).toEqual([
+      "message:cedar-valley-air-kalo-maya-welcome-setup",
+      "message:cedar-valley-air-kalo-maya-first-route-guidance"
+    ]);
+    expect(save.objectiveState.trackedObjectiveId).toBe("objective:choose-first-route");
+    expect(save.objectiveState.activeObjectiveIds).toEqual(["objective:choose-first-route"]);
     expect(save.objectiveState.objectiveProgressIds).toEqual([
-      "objective-progress:operate-first-route"
+      "objective-progress:choose-first-route"
     ]);
     expect(save.storyState.flags).toContain("act1-started");
     expect(save.storyState.currentChapter).toBe("founder-operator");

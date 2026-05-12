@@ -32,6 +32,7 @@ import {
   aircraftManufacturerSchema,
   aircraftTypeSchema,
   difficultyPresetSchema,
+  featureUnlockSchema,
   inboxMessageSchema,
   careerObjectiveSchema,
   simulationPaceSchema
@@ -40,10 +41,13 @@ import {
 import {
   aircraftManufacturers as starterAircraftManufacturers,
   aircraftTypes as starterAircraftTypes,
+  actOneFeatureUnlocks,
+  actOneObjectives,
+  ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID,
+  getActOneInitialInboxMessages,
+  getActOneStartingFeatureUnlocks,
   curatedAirportStubs as starterAirportCuratedStubs,
   difficultyPresets as starterDifficultyPresets,
-  sampleInboxMessages as starterInboxTemplates,
-  sampleObjectives as starterObjectives,
   sampleSaveAirports as starterSaveAirports,
   sampleSimulationPaces as starterSimulationPaces,
   starterAirports as starterAirportCatalog
@@ -58,8 +62,12 @@ const starterDifficultyPresetCatalog = z
   .array(difficultyPresetSchema)
   .min(1)
   .parse(starterDifficultyPresets);
-const starterInboxTemplateCatalog = z.array(inboxMessageSchema).min(1).parse(starterInboxTemplates);
-const starterObjectiveCatalog = z.array(careerObjectiveSchema).min(1).parse(starterObjectives);
+const actOneFeatureUnlockCatalog = z.array(featureUnlockSchema).min(1).parse(actOneFeatureUnlocks);
+const initialInboxMessages = z
+  .array(inboxMessageSchema)
+  .min(1)
+  .parse(getActOneInitialInboxMessages());
+const starterObjectiveCatalog = z.array(careerObjectiveSchema).min(1).parse(actOneObjectives);
 const starterSimulationPaceCatalog = z
   .array(simulationPaceSchema)
   .min(1)
@@ -1226,6 +1234,25 @@ const buildObjectiveProgressId = (objectiveId: ObjectiveId) =>
   objectiveId.replace(/^objective:/, "objective-progress:") as ObjectiveProgressId;
 
 /**
+ * Returns the configured default Act 1 objective from the content catalog.
+ *
+ * @param objectives - The available Act 1 objective definitions.
+ * @returns The configured default tracked objective.
+ * @throws Error if the content catalog is missing its default objective.
+ */
+const chooseDefaultActOneObjective = (objectives: readonly CareerObjective[]) => {
+  const objective = objectives.find(
+    (candidate) => candidate.id === ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID
+  );
+
+  if (!objective) {
+    throw new Error(`Default Act 1 objective is missing: ${ACT_ONE_DEFAULT_TRACKED_OBJECTIVE_ID}`);
+  }
+
+  return objective;
+};
+
+/**
  * Builds the initial progress entry for a tracked objective.
  *
  * @param objective - The target objective.
@@ -1260,13 +1287,21 @@ const buildObjectiveProgressEntry = (
  * @returns An array of generated inbox messages.
  */
 const buildInboxMessages = (saveSlug: string, createdAt: string): InboxMessage[] =>
-  starterInboxTemplateCatalog.map((template, index) => ({
+  initialInboxMessages.map((template, index) => ({
     ...template,
     id: buildInboxMessageId(saveSlug, template.id, index),
     createdAt: shiftIsoDateTime(createdAt, index * 3 + 1),
     read: false,
     archived: false
   })) as unknown as InboxMessage[];
+
+/**
+ * Lists the feature unlock IDs available at the start of Act 1.
+ *
+ * @returns Starting feature unlock IDs for a new save.
+ */
+const buildStartingFeatureUnlockIds = () =>
+  getActOneStartingFeatureUnlocks().map((unlock) => unlock.id);
 
 /**
  * Builds a deterministic ID for a new save game.
@@ -1490,11 +1525,8 @@ export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): Save
       starterAircraft.reliabilityModifier + Math.trunc(difficultyPreset.maintenanceForgiveness / 5)
   };
   const objectives = starterObjectiveCatalog;
-  const activeObjective = objectives[0];
-
-  if (!activeObjective) {
-    throw new Error("No starter objectives are available.");
-  }
+  const activeObjective = chooseDefaultActOneObjective(objectives);
+  const startingFeatureUnlockIds = buildStartingFeatureUnlockIds();
 
   const objectiveProgress = objectives.map((objective, index) =>
     buildObjectiveProgressEntry(objective, index, createdAt)
@@ -1549,7 +1581,7 @@ export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): Save
       simulationPaceId: simulationPace.id,
       createdAt,
       lastSimulatedAt: currentGameTime,
-      featureUnlocks: [],
+      featureUnlocks: startingFeatureUnlockIds,
       activeTrackedObjectiveId: activeObjective.id,
       aircraftIds: [adjustedStarterAircraft.id],
       routeIds: [],
@@ -1590,7 +1622,7 @@ export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): Save
       lastInboxSyncAt: createdAt
     },
     reports: [],
-    featureUnlocks: [],
+    featureUnlocks: actOneFeatureUnlockCatalog,
     trackedObjectiveId: activeObjective.id,
     objectiveState,
     storyState: buildStoryState(activeObjective),
