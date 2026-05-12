@@ -1214,4 +1214,3 @@ export const validateActOneContent = (): ActOneContentValidationIssue[] => {
 
   return issues;
 };
-
