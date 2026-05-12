@@ -222,9 +222,10 @@ export type GameplayResult<TValue> =
   | { ok: false; errors: GameplayValidationError[] };
 
 const ok = <TValue>(value: TValue): GameplayResult<TValue> => ({ ok: true, value });
-const fail = <TValue = never>(
-  ...errors: GameplayValidationError[]
-): GameplayResult<TValue> => ({ ok: false, errors });
+const fail = <TValue = never>(...errors: GameplayValidationError[]): GameplayResult<TValue> => ({
+  ok: false,
+  errors
+});
 
 const ACT_ONE_SCHEDULED_ROUTE_LIMIT = 1;
 const ACT_ONE_EXPANDED_ROUTE_LIMIT = 2;
@@ -252,7 +253,12 @@ export const calculateAirportDistanceNm = (
   origin: Pick<CuratedAirport, "id" | "latitude" | "longitude">,
   destination: Pick<CuratedAirport, "id" | "latitude" | "longitude">
 ): GameplayResult<number> => {
-  const coordinates = [origin.latitude, origin.longitude, destination.latitude, destination.longitude];
+  const coordinates = [
+    origin.latitude,
+    origin.longitude,
+    destination.latitude,
+    destination.longitude
+  ];
   if (coordinates.some((value) => !Number.isFinite(value))) {
     return fail({
       code: "invalid-airport-coordinates",
@@ -267,9 +273,7 @@ export const calculateAirportDistanceNm = (
   const destinationLatitude = toRadians(destination.latitude);
   const haversine =
     Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(originLatitude) *
-      Math.cos(destinationLatitude) *
-      Math.sin(longitudeDelta / 2) ** 2;
+    Math.cos(originLatitude) * Math.cos(destinationLatitude) * Math.sin(longitudeDelta / 2) ** 2;
   const earthRadiusNm = 3440.065;
   const distanceNm = 2 * earthRadiusNm * Math.asin(Math.min(1, Math.sqrt(haversine)));
 
@@ -288,8 +292,7 @@ export const estimateBlockTimeMinutes = (
   distanceNm: number,
   cruiseSpeedKtas: number,
   taxiBufferMinutes = DEFAULT_TAXI_BUFFER_MINUTES
-) =>
-  Math.ceil((distanceNm / cruiseSpeedKtas) * 60) + Math.max(0, Math.trunc(taxiBufferMinutes));
+) => Math.ceil((distanceNm / cruiseSpeedKtas) * 60) + Math.max(0, Math.trunc(taxiBufferMinutes));
 
 const findAirport = (save: SaveGame, airportId: AirportId) =>
   save.airports.find((airport) => airport.id === airportId);
@@ -408,7 +411,9 @@ export const checkAircraftRouteSuitability = (
       entityId: destination.id
     });
   }
-  return errors.length > 0 ? fail(...errors) : ok({ rangeCompatible: true, runwayCompatible: true });
+  return errors.length > 0
+    ? fail(...errors)
+    : ok({ rangeCompatible: true, runwayCompatible: true });
 };
 
 /**
@@ -418,10 +423,7 @@ export const checkAircraftRouteSuitability = (
  * @param input - Route plan request.
  * @returns Structured success with a route record or actionable validation errors.
  */
-export const createRoutePlan = (
-  save: SaveGame,
-  input: RoutePlanInput
-): GameplayResult<Route> => {
+export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): GameplayResult<Route> => {
   const errors: GameplayValidationError[] = [];
   const origin = findAirport(save, input.originAirportId);
   const destination = findAirport(save, input.destinationAirportId);
@@ -470,10 +472,7 @@ export const createRoutePlan = (
       entityId: input.originAirportId
     });
   }
-  if (
-    input.playableAirportIds &&
-    !input.playableAirportIds.includes(input.destinationAirportId)
-  ) {
+  if (input.playableAirportIds && !input.playableAirportIds.includes(input.destinationAirportId)) {
     errors.push({
       code: "destination-airport-not-app-ready",
       message: "Destination airport is not app-ready for current route planning.",
@@ -576,7 +575,9 @@ export const createRoutePlan = (
       connectingDemand: 0
     },
     marketPlaceholder: {
-      localPassengerInterest: Math.round((origin.localDemandRating + destination.localDemandRating) / 2),
+      localPassengerInterest: Math.round(
+        (origin.localDemandRating + destination.localDemandRating) / 2
+      ),
       businessTravelShare: Math.round(
         (origin.businessDemandRating + destination.businessDemandRating) / 2
       ),
@@ -703,7 +704,13 @@ export const validateScheduledFlight = (
       message: "Turn time cannot be negative."
     });
   }
-  if (errors.length > 0 || !aircraftInstance || !aircraftType || !route || departureMinutes === undefined) {
+  if (
+    errors.length > 0 ||
+    !aircraftInstance ||
+    !aircraftType ||
+    !route ||
+    departureMinutes === undefined
+  ) {
     return fail(...errors);
   }
 
@@ -760,7 +767,10 @@ export const validateScheduledFlight = (
   const existingSchedules = save.schedules.filter(
     (schedule) => schedule.aircraftInstanceId === aircraftInstance.id
   );
-  const allExistingFlights = [...existingSchedules.flatMap((s) => s.flights), ...existingFlightsInBatch];
+  const allExistingFlights = [
+    ...existingSchedules.flatMap((s) => s.flights),
+    ...existingFlightsInBatch
+  ];
 
   const overlapping = allExistingFlights.some((flight) => {
     const flightWindow = getFlightWindow(flight);
@@ -827,7 +837,8 @@ export const createRoundTripSchedule = (
     });
   }
 
-  const inboundDepartureMinutes = outboundDeparture + outbound.value.blockTimeMinutes + input.turnTimeMinutes;
+  const inboundDepartureMinutes =
+    outboundDeparture + outbound.value.blockTimeMinutes + input.turnTimeMinutes;
   const inbound = validateScheduledFlight(
     save,
     {
@@ -896,7 +907,10 @@ export const addScheduleToSave = (
     ...save,
     routes: save.routes.map((route) =>
       routeIdsInSchedule.has(route.id)
-        ? { ...route, assignedScheduleIds: [...new Set([...route.assignedScheduleIds, schedule.id])] }
+        ? {
+            ...route,
+            assignedScheduleIds: [...new Set([...route.assignedScheduleIds, schedule.id])]
+          }
         : route
     ),
     aircraft: save.aircraft.map((aircraft) =>
@@ -919,7 +933,10 @@ export type ActOneRequirementCheck = {
 const objectiveIdByRequirementType = (
   save: SaveGame,
   requirementType: CareerObjective["requirements"][number]["type"]
-) => save.objectives.find((objective) => objective.requirements.some((requirement) => requirement.type === requirementType))?.id;
+) =>
+  save.objectives.find((objective) =>
+    objective.requirements.some((requirement) => requirement.type === requirementType)
+  )?.id;
 
 /**
  * Checks whether the "Choose the First Route" requirement is currently satisfied.
@@ -955,7 +972,9 @@ export const checkBuildFirstScheduleRequirement = (save: SaveGame): ActOneRequir
     met: schedules.length > 0,
     missingRequirements:
       schedules.length > 0 ? [] : ["Create one valid round-trip aircraft schedule."],
-    relatedRouteIds: schedules.flatMap((schedule) => schedule.flights.map((flight) => flight.routeId)),
+    relatedRouteIds: schedules.flatMap((schedule) =>
+      schedule.flights.map((flight) => flight.routeId)
+    ),
     relatedScheduleIds: schedules.map((schedule) => schedule.id)
   };
 };

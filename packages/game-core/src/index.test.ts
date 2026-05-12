@@ -737,10 +737,7 @@ describe("game-core package", () => {
       ok: true,
       value: expect.any(Number)
     });
-    const invalid = calculateAirportDistanceNm(
-      { ...origin, latitude: Number.NaN },
-      destination
-    );
+    const invalid = calculateAirportDistanceNm({ ...origin, latitude: Number.NaN }, destination);
     expect(invalid.ok).toBe(false);
   });
 
@@ -920,7 +917,9 @@ describe("game-core package", () => {
       })
     ).toMatchObject({
       ok: false,
-      errors: expect.arrayContaining([expect.objectContaining({ code: "schedule-overlap-detected" })])
+      errors: expect.arrayContaining([
+        expect.objectContaining({ code: "schedule-overlap-detected" })
+      ])
     });
 
     expect(checkBuildFirstScheduleRequirement(withRoute.value).met).toBe(false);
@@ -1006,7 +1005,10 @@ describe("game-core package", () => {
       unlockedAirportIds: [...save.unlockedAirportIds, "airport:kcin" as AirportId],
       airline: {
         ...save.airline,
-        featureUnlocks: [...save.airline.featureUnlocks, "unlock:second-route-permission" as FeatureUnlockId]
+        featureUnlocks: [
+          ...save.airline.featureUnlocks,
+          "unlock:second-route-permission" as FeatureUnlockId
+        ]
       }
     };
 
