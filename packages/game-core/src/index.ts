@@ -687,7 +687,9 @@ export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): Gameplay
       connectingDemand: 0
     },
     marketPlaceholder: {
-      localPassengerInterest: Math.round((origin.localDemandRating + destination.localDemandRating) / 2),
+      localPassengerInterest: Math.round(
+        (origin.localDemandRating + destination.localDemandRating) / 2
+      ),
       businessTravelShare: Math.round(
         (origin.businessDemandRating + destination.businessDemandRating) / 2
       ),
