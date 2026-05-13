@@ -443,14 +443,27 @@ export const demandSummarySchema = z.object({
 });
 export type DemandSummary = z.infer<typeof demandSummarySchema>;
 
+export const routeMarketPlaceholderSchema = z.object({
+  localPassengerInterest: scoreSchema,
+  businessTravelShare: scoreSchema.optional(),
+  leisureTravelShare: scoreSchema.optional(),
+  demandConfidence: scoreSchema,
+  notes: z.string().min(1).optional(),
+  marketSource: z.string().min(1)
+});
+export type RouteMarketPlaceholder = z.infer<typeof routeMarketPlaceholderSchema>;
+
 export const routeSchema = z.object({
   id: routeIdSchema,
+  airlineId: airlineIdSchema,
   originAirportId: airportIdSchema,
   destinationAirportId: airportIdSchema,
   distanceNm: z.number().positive(),
   status: z.enum(["planned", "active", "suspended", "closed"]),
+  routeType: z.enum(["scheduled", "private_contract", "partner", "charter", "training"]),
   fare: positiveMoneySchema,
   demandSummary: demandSummarySchema,
+  marketPlaceholder: routeMarketPlaceholderSchema,
   frequencySummary: z.object({
     weeklyRoundTrips: z.number().int().nonnegative(),
     targetDailyFrequency: z.number().nonnegative()
@@ -466,7 +479,8 @@ export const routeSchema = z.object({
     })
   ),
   relatedContractIds: z.array(contractIdSchema),
-  unlockRequirements: z.array(z.string()).default([])
+  unlockRequirements: z.array(z.string()).default([]),
+  createdAt: isoDateTimeSchema
 });
 export type Route = z.infer<typeof routeSchema>;
 
@@ -474,6 +488,8 @@ export const scheduledFlightSchema = z.object({
   id: flightIdSchema,
   routeId: routeIdSchema,
   aircraftInstanceId: aircraftInstanceIdSchema,
+  originAirportId: airportIdSchema,
+  destinationAirportId: airportIdSchema,
   departureTimeLocal: z.string().regex(/^\d{2}:\d{2}$/),
   arrivalTimeLocal: z
     .string()
@@ -496,6 +512,7 @@ export type ScheduledFlight = z.infer<typeof scheduledFlightSchema>;
 
 export const aircraftScheduleSchema = z.object({
   id: scheduleIdSchema,
+  airlineId: airlineIdSchema,
   aircraftInstanceId: aircraftInstanceIdSchema,
   baseAirportId: airportIdSchema,
   flights: z.array(scheduledFlightSchema),

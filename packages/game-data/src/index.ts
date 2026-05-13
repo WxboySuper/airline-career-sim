@@ -653,16 +653,26 @@ export const sampleAircraft = [
 export const sampleRoutes = [
   {
     id: "route:kalo-kmcw",
+    airlineId: "airline:northfield-air-service",
     originAirportId: "airport:kalo",
     destinationAirportId: "airport:kmcw",
     distanceNm: 84,
     status: "active",
+    routeType: "scheduled",
     fare: 95,
     demandSummary: {
       localDemand: 34,
       businessDemand: 20,
       leisureDemand: 28,
       connectingDemand: 0
+    },
+    marketPlaceholder: {
+      localPassengerInterest: 34,
+      businessTravelShare: 20,
+      leisureTravelShare: 28,
+      demandConfidence: 45,
+      notes: "Starter fixture market placeholder only.",
+      marketSource: "fixture"
     },
     frequencySummary: {
       weeklyRoundTrips: 5,
@@ -671,13 +681,15 @@ export const sampleRoutes = [
     assignedScheduleIds: ["schedule:nc101as-weekly"],
     performanceHistory: [],
     relatedContractIds: ["contract:weekend-community-shuttle"],
-    unlockRequirements: ["founder route authority"]
+    unlockRequirements: ["founder route authority"],
+    createdAt: "2026-05-04T08:00:00.000-05:00"
   }
 ];
 
 export const sampleSchedules = [
   {
     id: "schedule:nc101as-weekly",
+    airlineId: "airline:northfield-air-service",
     aircraftInstanceId: "aircraft:nc101as",
     baseAirportId: "airport:kalo",
     flights: [
@@ -685,6 +697,8 @@ export const sampleSchedules = [
         id: "flight:kalo-kmcw-morning",
         routeId: "route:kalo-kmcw",
         aircraftInstanceId: "aircraft:nc101as",
+        originAirportId: "airport:kalo",
+        destinationAirportId: "airport:kmcw",
         departureTimeLocal: "08:00",
         arrivalTimeLocal: "08:45",
         blockTimeMinutes: 45,
@@ -698,6 +712,29 @@ export const sampleSchedules = [
     warnings: []
   }
 ];
+
+export const goal07DeveloperFixtures = {
+  starterAirports: sampleSaveAirports.slice(0, 2),
+  starterAircraft: sampleAircraft[0],
+  validStarterRoute: sampleRoutes[0],
+  invalidStarterRoutePlan: {
+    originAirportId: "airport:kalo",
+    destinationAirportId: "airport:kalo",
+    aircraftInstanceId: "aircraft:nc101as"
+  },
+  validRoundTrip: {
+    aircraftInstanceId: "aircraft:nc101as",
+    routeId: "route:kalo-kmcw",
+    firstDepartureTimeLocal: "08:00",
+    turnTimeMinutes: 30
+  },
+  invalidOverlappingSchedule: {
+    aircraftInstanceId: "aircraft:nc101as",
+    routeId: "route:kalo-kmcw",
+    departureTimeLocal: "08:15",
+    turnTimeMinutes: 30
+  }
+} as const;
 
 export const sampleFeatureUnlocks = [
   {
@@ -1004,3 +1041,5 @@ export const sampleSaveGame = {
     autosaveEnabled: true
   }
 };
+
+export const goal07StarterSaveFixture = sampleSaveGame;

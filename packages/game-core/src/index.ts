@@ -3,14 +3,18 @@ import type {
   AircraftCategory,
   AircraftInstance,
   AircraftInstanceId,
+  AircraftSchedule,
   AircraftType,
   AircraftTypeId,
   AirlineIdentity,
   AirlineStatus,
+  AirlineId,
   CareerObjective,
+  CuratedAirport,
   Difficulty,
   DifficultyPreset,
   FinanceState,
+  FlightId,
   FounderProfile,
   InboxMessage,
   AirportId,
@@ -18,7 +22,11 @@ import type {
   ObjectiveProgress,
   ObjectiveState,
   ObjectiveProgressId,
+  Route,
+  RouteId,
   SaveId,
+  ScheduleId,
+  ScheduledFlight,
   StoryState,
   RunwayClass,
   SimulationConfig,
@@ -201,6 +209,930 @@ export const isAircraftAllowedForAct1 = (aircraftType: AircraftType) =>
  */
 export const isRunwayCompatible = (aircraftType: AircraftType, runwayClass: RunwayClass) =>
   RUNWAY_CLASS_RANK[runwayClass] >= RUNWAY_CLASS_RANK[aircraftType.airportRunwayRequirement];
+
+export type GameplayValidationError = {
+  code: string;
+  message: string;
+  field?: string;
+  entityId?: string;
+};
+
+export type GameplayResult<TValue> =
+  | { ok: true; value: TValue }
+  | { ok: false; errors: GameplayValidationError[] };
+
+/**
+ * Wraps a value in a successful GameplayResult.
+ *
+ * @param value - Value to wrap.
+ * @returns Successful result.
+ */
+const ok = <TValue>(value: TValue): GameplayResult<TValue> => ({ ok: true, value });
+
+/**
+ * Creates a failed GameplayResult from one or more validation errors.
+ *
+ * @param errors - Validation errors.
+ * @returns Failed result.
+ */
+const fail = <TValue = never>(...errors: GameplayValidationError[]): GameplayResult<TValue> => ({
+  ok: false,
+  errors
+});
+
+const ACT_ONE_SCHEDULED_ROUTE_LIMIT = 1;
+const ACT_ONE_EXPANDED_ROUTE_LIMIT = 2;
+const DEFAULT_ROUTE_FARE = 95;
+const DEFAULT_MINIMUM_TURN_TIME_MINUTES = 20;
+const DEFAULT_TAXI_BUFFER_MINUTES = 12;
+const DAILY_OPERATION_DAYS: ScheduledFlight["daysOfOperation"] = [
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun"
+];
+
+/**
+ * Calculates the great-circle distance between two curated airports in nautical miles.
+ *
+ * @param origin - The origin airport record.
+ * @param destination - The destination airport record.
+ * @returns Structured success with a rounded nautical-mile distance or validation errors.
+ */
+export const calculateAirportDistanceNm = (
+  origin: Pick<CuratedAirport, "id" | "latitude" | "longitude">,
+  destination: Pick<CuratedAirport, "id" | "latitude" | "longitude">
+): GameplayResult<number> => {
+  const coordinates = [
+    origin.latitude,
+    origin.longitude,
+    destination.latitude,
+    destination.longitude
+  ];
+  if (coordinates.some((value) => !Number.isFinite(value))) {
+    return fail({
+      code: "invalid-airport-coordinates",
+      message: "Airport coordinates must be finite numbers."
+    });
+  }
+
+  /**
+   * Converts degrees to radians.
+   *
+   * @param degrees - Angle in degrees.
+   * @returns Angle in radians.
+   */
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const latitudeDelta = toRadians(destination.latitude - origin.latitude);
+  const longitudeDelta = toRadians(destination.longitude - origin.longitude);
+  const originLatitude = toRadians(origin.latitude);
+  const destinationLatitude = toRadians(destination.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(originLatitude) * Math.cos(destinationLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+  const earthRadiusNm = 3440.065;
+  const distanceNm = 2 * earthRadiusNm * Math.asin(Math.min(1, Math.sqrt(haversine)));
+
+  return ok(Math.round(distanceNm));
+};
+
+/**
+ * Estimates deterministic block time from route distance and aircraft cruise speed.
+ *
+ * @param distanceNm - Route distance in nautical miles.
+ * @param cruiseSpeedKtas - Aircraft cruise speed in knots true airspeed.
+ * @param taxiBufferMinutes - Fixed departure/arrival operating buffer.
+ * @returns Estimated block time in whole minutes.
+ */
+export const estimateBlockTimeMinutes = (
+  distanceNm: number,
+  cruiseSpeedKtas: number,
+  taxiBufferMinutes = DEFAULT_TAXI_BUFFER_MINUTES
+) => Math.ceil((distanceNm / cruiseSpeedKtas) * 60) + Math.max(0, Math.trunc(taxiBufferMinutes));
+
+/**
+ * Finds an airport in the save state by its ID.
+ *
+ * @param save - Save state to search.
+ * @param airportId - ID of the airport.
+ * @returns The airport record if found, otherwise undefined.
+ */
+const findAirport = (save: SaveGame, airportId: AirportId) =>
+  save.airports.find((airport) => airport.id === airportId);
+
+/**
+ * Finds an aircraft instance in the save state by its ID.
+ *
+ * @param save - Save state to search.
+ * @param aircraftId - ID of the aircraft instance.
+ * @returns The aircraft instance if found, otherwise undefined.
+ */
+const findAircraftInstance = (save: SaveGame, aircraftId: AircraftInstanceId) =>
+  save.aircraft.find((aircraft) => aircraft.id === aircraftId);
+
+/**
+ * Resolves the aircraft type for a given aircraft instance.
+ *
+ * @param save - Save state containing aircraft and types.
+ * @param aircraftId - ID of the aircraft instance.
+ * @returns The aircraft type if resolved, otherwise undefined.
+ */
+const findAircraftTypeForInstance = (save: SaveGame, aircraftId: AircraftInstanceId) => {
+  const instance = findAircraftInstance(save, aircraftId);
+  if (!instance) {
+    return undefined;
+  }
+  return findAircraftById(save.aircraftTypes, instance.aircraftTypeId);
+};
+
+/**
+ * Generates a deterministic route ID from origin and destination airports.
+ *
+ * @param originAirportId - Origin airport ID.
+ * @param destinationAirportId - Destination airport ID.
+ * @returns Branded RouteId.
+ */
+const routeIdFor = (originAirportId: AirportId, destinationAirportId: AirportId) =>
+  `route:${originAirportId.replace(/^airport:/, "")}-${destinationAirportId.replace(
+    /^airport:/,
+    ""
+  )}` as RouteId;
+
+/**
+ * Generates a deterministic schedule ID for an aircraft and route pairing.
+ *
+ * @param aircraftId - Aircraft instance ID.
+ * @param routeId - Route ID.
+ * @returns Branded ScheduleId.
+ */
+const scheduleIdFor = (aircraftId: AircraftInstanceId, routeId: RouteId) =>
+  `schedule:${aircraftId.replace(/^aircraft:/, "")}-${routeId.replace(
+    /^route:/,
+    ""
+  )}` as ScheduleId;
+
+/**
+ * Parses an HH:MM time string into total minutes since midnight.
+ *
+ * @param time - 24-hour time string.
+ * @returns Minutes since midnight, or undefined if invalid.
+ */
+const toMinutes = (time: string) => {
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match) {
+    return undefined;
+  }
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) {
+    return undefined;
+  }
+  return hours * 60 + minutes;
+};
+
+/**
+ * Formats total minutes since midnight into an HH:MM string.
+ *
+ * @param minutes - Minutes since midnight.
+ * @returns 24-hour time string.
+ */
+const fromMinutes = (minutes: number) => {
+  const normalized = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalized / 60)
+    .toString()
+    .padStart(2, "0");
+  const minutePart = (normalized % 60).toString().padStart(2, "0");
+  return `${hours}:${minutePart}`;
+};
+
+/**
+ * Determines the current route limit based on airline unlocks.
+ *
+ * @param save - Save state to check.
+ * @returns The integer route limit.
+ */
+const getExpandedRouteLimit = (save: SaveGame) =>
+  save.airline.featureUnlocks.some((unlockId) => unlockId === "unlock:second-route-permission")
+    ? ACT_ONE_EXPANDED_ROUTE_LIMIT
+    : ACT_ONE_SCHEDULED_ROUTE_LIMIT;
+
+/**
+ * Reports whether the current Act 1 save can accept another scheduled route.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured result with route-limit metadata.
+ */
+export const canAddRouteForCurrentAct = (save: SaveGame) => {
+  const scheduledRouteCount = save.routes.filter((route) => route.routeType === "scheduled").length;
+  const routeLimit = getExpandedRouteLimit(save);
+  return {
+    allowed: scheduledRouteCount < routeLimit,
+    scheduledRouteCount,
+    routeLimit
+  };
+};
+
+export type RoutePlanInput = {
+  originAirportId: AirportId;
+  destinationAirportId: AirportId;
+  aircraftInstanceId: AircraftInstanceId;
+  routeType?: Route["routeType"];
+  fare?: number;
+  createdAt?: string;
+  excludedAirportIds?: readonly AirportId[];
+  playableAirportIds?: readonly AirportId[];
+};
+
+/**
+ * Checks whether an aircraft type can operate a specific route and airport pair.
+ *
+ * @param aircraftType - Aircraft type to evaluate.
+ * @param distanceNm - Route length.
+ * @param origin - Origin airport.
+ * @param destination - Destination airport.
+ * @returns Structured suitability result.
+ */
+export const checkAircraftRouteSuitability = (
+  aircraftType: AircraftType,
+  distanceNm: number,
+  origin: CuratedAirport,
+  destination: CuratedAirport
+): GameplayResult<{ rangeCompatible: true; runwayCompatible: true }> => {
+  const errors: GameplayValidationError[] = [];
+  if (distanceNm > aircraftType.rangeNm) {
+    errors.push({
+      code: "aircraft-range-too-short",
+      message: "Aircraft range is shorter than the planned route distance.",
+      entityId: aircraftType.id
+    });
+  }
+  if (!isRunwayCompatible(aircraftType, origin.runwayClass)) {
+    errors.push({
+      code: "origin-runway-incompatible",
+      message: "Origin airport runway class is not compatible with the selected aircraft.",
+      entityId: origin.id
+    });
+  }
+  if (!isRunwayCompatible(aircraftType, destination.runwayClass)) {
+    errors.push({
+      code: "destination-runway-incompatible",
+      message: "Destination airport runway class is not compatible with the selected aircraft.",
+      entityId: destination.id
+    });
+  }
+  return errors.length > 0
+    ? fail(...errors)
+    : ok({ rangeCompatible: true, runwayCompatible: true });
+};
+
+/**
+ * Validates basic airport existence and identity for a new route.
+ *
+ * @param input - Route plan request.
+ * @param origin - Resolved origin airport.
+ * @param destination - Resolved destination airport.
+ * @param errors - Error collection to append to.
+ */
+const validateRouteAirports = (
+  input: RoutePlanInput,
+  origin: CuratedAirport | undefined,
+  destination: CuratedAirport | undefined,
+  errors: GameplayValidationError[]
+) => {
+  if (!origin) {
+    errors.push({
+      code: "origin-airport-missing",
+      message: "Origin airport must exist in the save airport set.",
+      field: "originAirportId",
+      entityId: input.originAirportId
+    });
+  }
+  if (!destination) {
+    errors.push({
+      code: "destination-airport-missing",
+      message: "Destination airport must exist in the save airport set.",
+      field: "destinationAirportId",
+      entityId: input.destinationAirportId
+    });
+  }
+  if (input.originAirportId === input.destinationAirportId) {
+    errors.push({
+      code: "route-airports-identical",
+      message: "Origin and destination airports must differ."
+    });
+  }
+  if (input.excludedAirportIds?.includes(input.originAirportId)) {
+    errors.push({
+      code: "origin-airport-excluded",
+      message: "Origin airport is excluded from route planning.",
+      entityId: input.originAirportId
+    });
+  }
+  if (input.excludedAirportIds?.includes(input.destinationAirportId)) {
+    errors.push({
+      code: "destination-airport-excluded",
+      message: "Destination airport is excluded from route planning.",
+      entityId: input.destinationAirportId
+    });
+  }
+};
+
+/**
+ * Validates gameplay constraints like availability and app-readiness.
+ *
+ * @param save - Current save state.
+ * @param input - Route plan request.
+ * @param errors - Error collection to append to.
+ */
+const validateRouteConstraints = (
+  save: SaveGame,
+  input: RoutePlanInput,
+  errors: GameplayValidationError[]
+) => {
+  if (input.playableAirportIds && !input.playableAirportIds.includes(input.originAirportId)) {
+    errors.push({
+      code: "origin-airport-not-app-ready",
+      message: "Origin airport is not app-ready for current route planning.",
+      entityId: input.originAirportId
+    });
+  }
+  if (input.playableAirportIds && !input.playableAirportIds.includes(input.destinationAirportId)) {
+    errors.push({
+      code: "destination-airport-not-app-ready",
+      message: "Destination airport is not app-ready for current route planning.",
+      entityId: input.destinationAirportId
+    });
+  }
+  if (!save.unlockedAirportIds.includes(input.originAirportId)) {
+    errors.push({
+      code: "origin-airport-locked",
+      message: "Origin airport is not currently available to the airline.",
+      entityId: input.originAirportId
+    });
+  }
+  if (!save.unlockedAirportIds.includes(input.destinationAirportId)) {
+    errors.push({
+      code: "destination-airport-locked",
+      message: "Destination airport is not currently available to the airline.",
+      entityId: input.destinationAirportId
+    });
+  }
+  const existingScheduled = save.routes.filter((route) => route.routeType === "scheduled").length;
+  const isPlanningScheduled = (input.routeType ?? "scheduled") === "scheduled";
+
+  if (isPlanningScheduled && existingScheduled === 0 && input.originAirportId !== save.airline.homeAirportId) {
+    errors.push({
+      code: "first-route-must-use-home-airport",
+      message: "The first scheduled route must originate from the airline home airport."
+    });
+  }
+};
+
+/**
+ * Enforces Act 1 specific business rules for route creation.
+ *
+ * @param save - Current save state.
+ * @param input - Route plan request.
+ * @param routeType - Normalized route type.
+ * @param errors - Error collection to append to.
+ */
+const validateActOneRouteRules = (
+  save: SaveGame,
+  input: RoutePlanInput,
+  routeType: Route["routeType"],
+  errors: GameplayValidationError[]
+) => {
+  if (
+    routeType === "scheduled" &&
+    save.airline.currentPhase === "founder-operator" &&
+    input.originAirportId !== save.airline.homeAirportId
+  ) {
+    errors.push({
+      code: "act1-hub-style-origin-blocked",
+      message: "Act 1 scheduled routes must originate from the home airport."
+    });
+  }
+  if (routeType !== "scheduled" && routeType !== "private_contract") {
+    errors.push({
+      code: "route-type-not-supported-yet",
+      message: "Only scheduled and private contract route placeholders are supported here."
+    });
+  }
+  const routeLimit = canAddRouteForCurrentAct(save);
+  if (routeType === "scheduled" && !routeLimit.allowed) {
+    errors.push({
+      code: "act1-route-limit-reached",
+      message: "Act 1 scheduled route limit has been reached."
+    });
+  }
+};
+
+/**
+ * Creates a validated scheduled route plan for the early Act 1 loop.
+ *
+ * @param save - Save state supplying airports, unlocks, airline, and aircraft.
+ * @param input - Route plan request.
+ * @returns Structured success with a route record or actionable validation errors.
+ */
+export const createRoutePlan = (save: SaveGame, input: RoutePlanInput): GameplayResult<Route> => {
+  const errors: GameplayValidationError[] = [];
+  const origin = findAirport(save, input.originAirportId);
+  const destination = findAirport(save, input.destinationAirportId);
+  const routeType = input.routeType ?? "scheduled";
+
+  validateRouteAirports(input, origin, destination, errors);
+  validateRouteConstraints(save, input, errors);
+  validateActOneRouteRules(save, input, routeType, errors);
+
+  const aircraftType = findAircraftTypeForInstance(save, input.aircraftInstanceId);
+  if (!aircraftType) {
+    errors.push({
+      code: "aircraft-missing",
+      message: "Selected aircraft must exist and reference a known aircraft type.",
+      entityId: input.aircraftInstanceId
+    });
+  }
+
+  if (errors.length > 0 || !origin || !destination || !aircraftType) {
+    return fail(...errors);
+  }
+
+  const distanceResult = calculateAirportDistanceNm(origin, destination);
+  if (!distanceResult.ok) {
+    return distanceResult;
+  }
+  const distance = distanceResult.value;
+
+  const suitability = checkAircraftRouteSuitability(aircraftType, distance, origin, destination);
+  if (!suitability.ok) {
+    return suitability;
+  }
+
+  const routeId = routeIdFor(origin.id, destination.id);
+  if (save.routes.some((route) => route.id === routeId)) {
+    return fail({
+      code: "route-already-exists",
+      message: "A route with this origin and destination already exists.",
+      entityId: routeId
+    });
+  }
+
+  return ok({
+    id: routeId,
+    airlineId: save.airline.id as AirlineId,
+    originAirportId: origin.id,
+    destinationAirportId: destination.id,
+    distanceNm: distance,
+    status: "planned",
+    routeType,
+    fare: input.fare ?? DEFAULT_ROUTE_FARE,
+    demandSummary: {
+      localDemand: 0,
+      businessDemand: 0,
+      leisureDemand: 0,
+      connectingDemand: 0
+    },
+    marketPlaceholder: {
+      localPassengerInterest: Math.round(
+        (origin.localDemandRating + destination.localDemandRating) / 2
+      ),
+      businessTravelShare: Math.round(
+        (origin.businessDemandRating + destination.businessDemandRating) / 2
+      ),
+      leisureTravelShare: Math.round(
+        (origin.leisureDemandRating + destination.leisureDemandRating) / 2
+      ),
+      demandConfidence: 35,
+      notes: "Placeholder market profile only. Full demand simulation is out of scope.",
+      marketSource: "curated-airport-placeholder"
+    },
+    frequencySummary: {
+      weeklyRoundTrips: 0,
+      targetDailyFrequency: 0
+    },
+    assignedScheduleIds: [],
+    performanceHistory: [],
+    relatedContractIds: [],
+    unlockRequirements: routeType === "scheduled" ? ["founder route authority"] : [],
+    createdAt: input.createdAt ?? save.currentGameTime
+  });
+};
+
+/**
+ * Adds a prevalidated route to a save without mutating the original object.
+ *
+ * @param save - Existing save state.
+ * @param route - Route record to append.
+ * @returns Structured success with a new save object or a duplicate route error.
+ */
+export const addRouteToSave = (save: SaveGame, route: Route): GameplayResult<SaveGame> => {
+  if (save.routes.some((existing) => existing.id === route.id)) {
+    return fail({
+      code: "route-id-duplicate",
+      message: "Route ID already exists in the save.",
+      entityId: route.id
+    });
+  }
+
+  return ok({
+    ...save,
+    airline: {
+      ...save.airline,
+      routeIds: [...save.airline.routeIds, route.id]
+    },
+    routes: [...save.routes, route]
+  });
+};
+
+/**
+ * Retrieves all routes belonging to a specific airline.
+ *
+ * @param save - Current save state.
+ * @param airlineId - ID of the airline (defaults to current airline).
+ * @returns Array of routes.
+ */
+export const getAirlineRoutes = (save: SaveGame, airlineId: AirlineId = save.airline.id) =>
+  save.routes.filter((route) => route.airlineId === airlineId);
+
+/**
+ * Retrieves all active routes belonging to a specific airline.
+ *
+ * @param save - Current save state.
+ * @param airlineId - ID of the airline (defaults to current airline).
+ * @returns Array of active routes.
+ */
+export const getActiveRoutes = (save: SaveGame, airlineId: AirlineId = save.airline.id) =>
+  getAirlineRoutes(save, airlineId).filter((route) => route.status === "active");
+
+export type ScheduleFlightInput = {
+  aircraftInstanceId: AircraftInstanceId;
+  routeId: RouteId;
+  departureTimeLocal: string;
+  turnTimeMinutes: number;
+  originAirportId?: AirportId;
+  destinationAirportId?: AirportId;
+  daysOfOperation?: ScheduledFlight["daysOfOperation"];
+};
+
+/**
+ * Calculates the total time window (departure to end of turn) for a flight.
+ *
+ * @param flight - Scheduled flight details.
+ * @returns Object with start and end minutes since midnight, or undefined if invalid.
+ */
+const getFlightWindow = (flight: ScheduledFlight) => {
+  const start = toMinutes(flight.departureTimeLocal);
+  if (start === undefined) {
+    return undefined;
+  }
+  return {
+    start,
+    end: start + flight.blockTimeMinutes + flight.turnTimeMinutes
+  };
+};
+
+/**
+ * Validates a one-way scheduled flight against Act 1 route and aircraft rules.
+ *
+ * @param save - Save state to inspect.
+ * @param input - Requested flight details.
+ * @param existingFlightsInBatch - Optional set of flights being validated in the same turn (e.g. outbound + inbound) to check for batch overlaps.
+ * @returns Structured success with a scheduled flight or validation errors.
+ */
+export const validateScheduledFlight = (
+  save: SaveGame,
+  input: ScheduleFlightInput,
+  existingFlightsInBatch: ScheduledFlight[] = []
+): GameplayResult<ScheduledFlight> => {
+  const errors: GameplayValidationError[] = [];
+  const aircraftInstance = findAircraftInstance(save, input.aircraftInstanceId);
+  const aircraftType = findAircraftTypeForInstance(save, input.aircraftInstanceId);
+  const route = save.routes.find((candidate) => candidate.id === input.routeId);
+  const departureMinutes = toMinutes(input.departureTimeLocal);
+
+  if (!aircraftInstance || !aircraftType) {
+    errors.push({
+      code: "schedule-aircraft-missing",
+      message: "Schedule aircraft must exist.",
+      entityId: input.aircraftInstanceId
+    });
+  }
+  if (!route) {
+    errors.push({
+      code: "schedule-route-missing",
+      message: "Schedule route must exist.",
+      entityId: input.routeId
+    });
+  }
+  if (departureMinutes === undefined) {
+    errors.push({
+      code: "schedule-departure-invalid",
+      message: "Departure time must use a valid 24-hour HH:MM value."
+    });
+  }
+  if (input.turnTimeMinutes < DEFAULT_MINIMUM_TURN_TIME_MINUTES) {
+    errors.push({
+      code: "schedule-turn-time-too-short",
+      message: "Turn time does not meet the Act 1 minimum threshold."
+    });
+  }
+  if (input.turnTimeMinutes < 0) {
+    errors.push({
+      code: "schedule-turn-time-negative",
+      message: "Turn time cannot be negative."
+    });
+  }
+  if (
+    errors.length > 0 ||
+    !aircraftInstance ||
+    !aircraftType ||
+    !route ||
+    departureMinutes === undefined
+  ) {
+    return fail(...errors);
+  }
+
+  const originId = input.originAirportId ?? route.originAirportId;
+  const destinationId = input.destinationAirportId ?? route.destinationAirportId;
+  const origin = findAirport(save, originId);
+  const destination = findAirport(save, destinationId);
+
+  if (!origin || !destination) {
+    return fail({
+      code: "schedule-route-airport-missing",
+      message: "Route airports must exist before scheduling."
+    });
+  }
+
+  const suitability = checkAircraftRouteSuitability(
+    aircraftType,
+    route.distanceNm,
+    origin,
+    destination
+  );
+  if (!suitability.ok) {
+    return suitability;
+  }
+
+  const blockTimeMinutes = estimateBlockTimeMinutes(route.distanceNm, aircraftType.cruiseSpeedKtas);
+  const operatingWindowEnd = departureMinutes + blockTimeMinutes + input.turnTimeMinutes;
+  if (operatingWindowEnd > 1440) {
+    return fail({
+      code: "schedule-outside-operating-day",
+      message: "The flight and its turn time must fit inside one 24-hour operating day."
+    });
+  }
+
+  const candidate: ScheduledFlight = {
+    id: `flight:${input.aircraftInstanceId.replace(/^aircraft:/, "")}-${input.routeId.replace(
+      /^route:/,
+      ""
+    )}-${input.departureTimeLocal.replace(":", "")}-${originId.replace(/^airport:/, "")}` as FlightId,
+    routeId: route.id,
+    aircraftInstanceId: aircraftInstance.id,
+    originAirportId: originId,
+    destinationAirportId: destinationId,
+    departureTimeLocal: input.departureTimeLocal,
+    arrivalTimeLocal: fromMinutes(departureMinutes + blockTimeMinutes),
+    blockTimeMinutes,
+    turnTimeMinutes: input.turnTimeMinutes,
+    daysOfOperation: input.daysOfOperation ?? DAILY_OPERATION_DAYS,
+    status: "draft",
+    warnings: []
+  };
+
+  const candidateWindow = getFlightWindow(candidate);
+  const existingSchedules = save.schedules.filter(
+    (schedule) => schedule.aircraftInstanceId === aircraftInstance.id
+  );
+  const allExistingFlights = [
+    ...existingSchedules.flatMap((s) => s.flights),
+    ...existingFlightsInBatch
+  ];
+
+  const overlapping = allExistingFlights.some((flight) => {
+    const flightWindow = getFlightWindow(flight);
+    if (!candidateWindow || !flightWindow) {
+      return false;
+    }
+    return candidateWindow.start < flightWindow.end && candidateWindow.end > flightWindow.start;
+  });
+
+  if (overlapping) {
+    return fail({
+      code: "schedule-overlap-detected",
+      message: "Aircraft schedule overlaps an existing flight block."
+    });
+  }
+
+  return ok(candidate);
+};
+
+export type RoundTripScheduleInput = {
+  aircraftInstanceId: AircraftInstanceId;
+  routeId: RouteId;
+  firstDepartureTimeLocal: string;
+  turnTimeMinutes: number;
+};
+
+/**
+ * Creates a deterministic daily round-trip schedule for the Act 1 starter loop.
+ *
+ * @param save - Save state to inspect.
+ * @param input - Round trip request.
+ * @returns Structured success with a schedule containing outbound and inbound flights.
+ */
+export const createRoundTripSchedule = (
+  save: SaveGame,
+  input: RoundTripScheduleInput
+): GameplayResult<AircraftSchedule> => {
+  const route = save.routes.find((candidate) => candidate.id === input.routeId);
+  if (!route) {
+    return fail({
+      code: "round-trip-route-invalid",
+      message: "Round trip route not found.",
+      entityId: input.routeId
+    });
+  }
+
+  const outbound = validateScheduledFlight(save, {
+    aircraftInstanceId: input.aircraftInstanceId,
+    routeId: input.routeId,
+    originAirportId: route.originAirportId,
+    destinationAirportId: route.destinationAirportId,
+    departureTimeLocal: input.firstDepartureTimeLocal,
+    turnTimeMinutes: input.turnTimeMinutes
+  });
+  if (!outbound.ok) {
+    return outbound;
+  }
+
+  const outboundDeparture = toMinutes(input.firstDepartureTimeLocal);
+  if (outboundDeparture === undefined) {
+    return fail({
+      code: "round-trip-departure-invalid",
+      message: "Round trip departure time is invalid."
+    });
+  }
+
+  const inboundDepartureMinutes =
+    outboundDeparture + outbound.value.blockTimeMinutes + input.turnTimeMinutes;
+  const inbound = validateScheduledFlight(
+    save,
+    {
+      aircraftInstanceId: input.aircraftInstanceId,
+      routeId: input.routeId,
+      originAirportId: route.destinationAirportId,
+      destinationAirportId: route.originAirportId,
+      departureTimeLocal: fromMinutes(inboundDepartureMinutes),
+      turnTimeMinutes: input.turnTimeMinutes
+    },
+    [outbound.value]
+  );
+
+  if (!inbound.ok) {
+    return inbound;
+  }
+
+  const scheduleId = scheduleIdFor(input.aircraftInstanceId, input.routeId);
+  if (save.schedules.some((schedule) => schedule.id === scheduleId)) {
+    return fail({
+      code: "schedule-id-duplicate",
+      message: "A schedule for this aircraft and route already exists.",
+      entityId: scheduleId
+    });
+  }
+
+  return ok({
+    id: scheduleId,
+    airlineId: save.airline.id as AirlineId,
+    aircraftInstanceId: input.aircraftInstanceId,
+    baseAirportId: save.airline.homeAirportId,
+    flights: [outbound.value, inbound.value],
+    status: "draft",
+    warnings: []
+  });
+};
+
+/**
+ * Adds a schedule to save state and wires it back to the aircraft and route.
+ *
+ * @param save - Existing save state.
+ * @param schedule - Schedule to append.
+ * @returns Structured success with updated immutable state or duplicate errors.
+ */
+export const addScheduleToSave = (
+  save: SaveGame,
+  schedule: AircraftSchedule
+): GameplayResult<SaveGame> => {
+  if (save.schedules.some((existing) => existing.id === schedule.id)) {
+    return fail({
+      code: "schedule-id-duplicate",
+      message: "Schedule ID already exists in the save.",
+      entityId: schedule.id
+    });
+  }
+
+  const routeIdsInSchedule = new Set(schedule.flights.map((f) => f.routeId));
+  if (routeIdsInSchedule.size === 0) {
+    return fail({
+      code: "schedule-route-missing",
+      message: "Schedule must contain at least one route-backed flight."
+    });
+  }
+
+  return ok({
+    ...save,
+    routes: save.routes.map((route) =>
+      routeIdsInSchedule.has(route.id)
+        ? {
+            ...route,
+            assignedScheduleIds: [...new Set([...route.assignedScheduleIds, schedule.id])]
+          }
+        : route
+    ),
+    aircraft: save.aircraft.map((aircraft) =>
+      aircraft.id === schedule.aircraftInstanceId
+        ? { ...aircraft, assignedScheduleId: schedule.id }
+        : aircraft
+    ),
+    schedules: [...save.schedules, schedule]
+  });
+};
+
+export type ActOneRequirementCheck = {
+  objectiveId: ObjectiveId;
+  met: boolean;
+  missingRequirements: string[];
+  relatedRouteIds: RouteId[];
+  relatedScheduleIds: ScheduleId[];
+};
+
+/**
+ * Finds the objective ID associated with a specific requirement type.
+ *
+ * @param save - Save state to search.
+ * @param requirementType - Type of requirement to find.
+ * @returns Objective ID if found, otherwise undefined.
+ */
+/**
+ * Finds the objective ID associated with a specific requirement type.
+ *
+ * @param save - Save state to search.
+ * @param requirementType - Type of requirement to find.
+ * @returns Objective ID if found, otherwise undefined.
+ */
+const objectiveIdByRequirementType = (
+  save: SaveGame,
+  requirementType: CareerObjective["requirements"][number]["type"]
+) =>
+  save.objectives.find((objective) =>
+    objective.requirements.some((requirement) => requirement.type === requirementType)
+  )?.id;
+
+/**
+ * Checks whether the "Choose the First Route" requirement is currently satisfied.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured requirement status.
+ */
+export const checkChooseFirstRouteRequirement = (save: SaveGame): ActOneRequirementCheck => {
+  const routeIds = getAirlineRoutes(save).map((route) => route.id);
+  return {
+    objectiveId:
+      objectiveIdByRequirementType(save, "choose-route") ??
+      ("objective:choose-first-route" as ObjectiveId),
+    met: routeIds.length > 0,
+    missingRequirements: routeIds.length > 0 ? [] : ["Create one valid founder route."],
+    relatedRouteIds: routeIds,
+    relatedScheduleIds: []
+  };
+};
+
+/**
+ * Checks whether the "Build the First Schedule" requirement is currently satisfied.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured requirement status.
+ */
+export const checkBuildFirstScheduleRequirement = (save: SaveGame): ActOneRequirementCheck => {
+  const schedules = save.schedules.filter((schedule) => schedule.flights.length >= 2);
+  return {
+    objectiveId:
+      objectiveIdByRequirementType(save, "build-schedule") ??
+      ("objective:build-first-schedule" as ObjectiveId),
+    met: schedules.length > 0,
+    missingRequirements:
+      schedules.length > 0 ? [] : ["Create one valid round-trip aircraft schedule."],
+    relatedRouteIds: schedules.flatMap((schedule) =>
+      schedule.flights.map((flight) => flight.routeId)
+    ),
+    relatedScheduleIds: schedules.map((schedule) => schedule.id)
+  };
+};
 
 /**
  * Options for overriding the default physical state of a newly created aircraft instance.
