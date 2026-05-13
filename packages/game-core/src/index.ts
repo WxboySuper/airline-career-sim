@@ -279,6 +279,12 @@ export const calculateAirportDistanceNm = (
     });
   }
 
+  /**
+   * Converts degrees to radians.
+   *
+   * @param degrees - Angle in degrees.
+   * @returns Angle in radians.
+   */
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const latitudeDelta = toRadians(destination.latitude - origin.latitude);
   const longitudeDelta = toRadians(destination.longitude - origin.longitude);
@@ -736,9 +742,23 @@ export const addRouteToSave = (save: SaveGame, route: Route): GameplayResult<Sav
   });
 };
 
+/**
+ * Retrieves all routes belonging to a specific airline.
+ *
+ * @param save - Current save state.
+ * @param airlineId - ID of the airline (defaults to current airline).
+ * @returns Array of routes.
+ */
 export const getAirlineRoutes = (save: SaveGame, airlineId: AirlineId = save.airline.id) =>
   save.routes.filter((route) => route.airlineId === airlineId);
 
+/**
+ * Retrieves all active routes belonging to a specific airline.
+ *
+ * @param save - Current save state.
+ * @param airlineId - ID of the airline (defaults to current airline).
+ * @returns Array of active routes.
+ */
 export const getActiveRoutes = (save: SaveGame, airlineId: AirlineId = save.airline.id) =>
   getAirlineRoutes(save, airlineId).filter((route) => route.status === "active");
 
@@ -752,6 +772,12 @@ export type ScheduleFlightInput = {
   daysOfOperation?: ScheduledFlight["daysOfOperation"];
 };
 
+/**
+ * Calculates the total time window (departure to end of turn) for a flight.
+ *
+ * @param flight - Scheduled flight details.
+ * @returns Object with start and end minutes since midnight, or undefined if invalid.
+ */
 const getFlightWindow = (flight: ScheduledFlight) => {
   const start = toMinutes(flight.departureTimeLocal);
   if (start === undefined) {
