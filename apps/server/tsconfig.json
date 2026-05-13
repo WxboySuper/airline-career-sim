@@ -6,9 +6,13 @@
     "rootDir": "src",
     "lib": ["ES2022"],
     "types": ["node", "vitest/globals"],
+    "paths": {
+      "@airline-career-sim/game-core": ["../../packages/game-core/dist/index.d.ts"],
+      "@airline-career-sim/shared": ["../../packages/shared/dist/index.d.ts"]
+    },
     "noEmit": false
   },
-  "references": [{ "path": "../../packages/shared" }],
+  "references": [{ "path": "../../packages/shared" }, { "path": "../../packages/game-core" }],
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"]
 }

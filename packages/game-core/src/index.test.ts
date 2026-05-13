@@ -25,10 +25,12 @@ import {
   checkBuildFirstScheduleRequirement,
   checkChooseFirstRouteRequirement,
   checkAircraftRouteSuitability,
+  checkOperationsReadiness,
   compareAircraftInSameCategory,
   createAircraftInstanceFromAcquisition,
   createLeasedAircraftInstance,
   createNewAirlineSave,
+  createOperationsReadinessReport,
   createRoundTripSchedule,
   createRoutePlan,
   createStartingAircraftInstance,
@@ -41,6 +43,7 @@ import {
   listAircraftByCategory,
   listAircraftByManufacturer,
   listStarterAircraft,
+  runActOneOpeningCoreLoop,
   simulationModuleStatus,
   validateScheduledFlight,
   validateSaveGameRelationships
@@ -1219,5 +1222,245 @@ describe("game-core package", () => {
         aircraftInstanceId: aircraftId
       }).errors
     ).toContainEqual(expect.objectContaining({ code: "destination-airport-missing" }));
+  });
+
+  it("runs the Act 1 opening core loop harness end to end", () => {
+    const result = runActOneOpeningCoreLoop({
+      userId: "user:harness" as never,
+      airlineName: "Harness Air",
+      founderName: "Riley Harper",
+      airlineCode: "HA",
+      starterAirportId: "airport:kalo" as AirportId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Harness should succeed");
+
+    expect(result.value.finalSave.routes).toHaveLength(1);
+    expect(result.value.finalSave.schedules).toHaveLength(1);
+    expect(result.value.createdAirline.name).toBe("Harness Air");
+    expect(result.value.starterAircraft.id).toBe(result.value.summary.starterAircraftId);
+    expect(result.value.selectedAirports.home.id).toBe("airport:kalo");
+    expect(result.value.selectedAirports.destination.id).toBe("airport:kmcw");
+    expect(result.value.createdRoute.id).toBe(result.value.summary.routeId);
+    expect(result.value.createdSchedule.id).toBe(result.value.summary.scheduleId);
+    expect(result.value.createdSchedule.flights.map((flight) => flight.aircraftInstanceId)).toEqual(
+      result.value.createdSchedule.flights.map(() => result.value.createdSchedule.aircraftInstanceId)
+    );
+    expect(result.value.objectiveChecks.chooseFirstRoute.met).toBe(true);
+    expect(result.value.objectiveChecks.buildFirstSchedule.met).toBe(true);
+    expect(saveGameSchema.parse(result.value.finalSave)).toEqual(result.value.finalSave);
+    expect(validateSaveGameRelationships(result.value.finalSave)).toEqual([]);
+  });
+
+  it("keeps the Act 1 opening core loop harness deterministic", () => {
+    const options = {
+      userId: "user:harness-deterministic" as never,
+      airlineName: "Deterministic Air",
+      founderName: "Morgan Lee",
+      airlineCode: "DA",
+      starterAirportId: "airport:kalo" as AirportId,
+      starterAircraftTypeId: "aircraft-type:kestrel-k10-trail" as AircraftTypeId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    };
+
+    const first = runActOneOpeningCoreLoop(options);
+    const second = runActOneOpeningCoreLoop(options);
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) throw new Error("Harness should be deterministic");
+    expect(first.value.summary).toEqual(second.value.summary);
+    expect(first.value.finalSave).toEqual(second.value.finalSave);
+  });
+
+  it("returns clean harness failures for invalid starter airport and aircraft route combo", () => {
+    const invalidAirport = runActOneOpeningCoreLoop({
+      userId: "user:harness-invalid-airport" as never,
+      airlineName: "Invalid Airport Air",
+      founderName: "Jordan Blake",
+      airlineCode: "IA",
+      starterAirportId: "airport:missing" as AirportId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+
+    expect(invalidAirport).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({ code: "harness-save-bootstrap-failed" })
+      ])
+    });
+
+    const invalidAircraftRouteCombo = runActOneOpeningCoreLoop({
+      userId: "user:harness-invalid-aircraft" as never,
+      airlineName: "Invalid Aircraft Air",
+      founderName: "Taylor Quinn",
+      airlineCode: "IC",
+      starterAirportId: "airport:kalo" as AirportId,
+      routeAircraftInstanceId: "aircraft:missing" as AircraftInstanceId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+
+    expect(invalidAircraftRouteCombo).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.objectContaining({ code: "aircraft-missing" })])
+    });
+  });
+
+  it("passes operations readiness with a valid first route and schedule", () => {
+    const harness = runActOneOpeningCoreLoop({
+      userId: "user:readiness" as never,
+      airlineName: "Readiness Air",
+      founderName: "Alex Reyes",
+      airlineCode: "RA",
+      starterAirportId: "airport:kalo" as AirportId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+    if (!harness.ok) throw new Error("Harness should succeed");
+
+    const readiness = checkOperationsReadiness(harness.value.finalSave);
+    const report = createOperationsReadinessReport(harness.value.finalSave, {
+      generatedAt: "2026-05-11T09:00:00.000-05:00"
+    });
+
+    expect(readiness.ok).toBe(true);
+    expect(report).toMatchObject({
+      reportType: "readiness",
+      airlineId: harness.value.finalSave.airline.id,
+      ready: true,
+      routesChecked: [harness.value.createdRoute.id],
+      schedulesChecked: [harness.value.createdSchedule.id],
+      aircraftChecked: [harness.value.starterAircraft.id],
+      errors: [],
+      warnings: expect.arrayContaining([
+        expect.objectContaining({ code: "readiness-placeholder-report-only" })
+      ]),
+      recommendedNextAction: "Run the first operating period when simulation controls are available."
+    });
+  });
+
+  it("fails operations readiness when route or schedule foundations are missing", () => {
+    const save = buildStarterSave();
+    const noRouteReport = createOperationsReadinessReport(save);
+
+    expect(noRouteReport.ready).toBe(false);
+    expect(noRouteReport.errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-first-route-missing" })
+    );
+    expect(noRouteReport.errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-first-schedule-missing" })
+    );
+
+    const routePlan = createRoutePlan(save, {
+      originAirportId: "airport:kalo" as AirportId,
+      destinationAirportId: "airport:kmcw" as AirportId,
+      aircraftInstanceId: save.aircraft[0].id
+    });
+    if (!routePlan.ok) throw new Error("Route planning failed");
+    const withRoute = addRouteToSave(save, routePlan.value);
+    if (!withRoute.ok) throw new Error("Route add failed");
+
+    const noScheduleReport = createOperationsReadinessReport(withRoute.value);
+    expect(noScheduleReport.ready).toBe(false);
+    expect(noScheduleReport.errors).not.toContainEqual(
+      expect.objectContaining({ code: "readiness-first-route-missing" })
+    );
+    expect(noScheduleReport.errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-first-schedule-missing" })
+    );
+    expect(noScheduleReport.errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-route-unscheduled" })
+    );
+  });
+
+  it("fails operations readiness for invalid aircraft assignment and runway or range regressions", () => {
+    const harness = runActOneOpeningCoreLoop({
+      userId: "user:readiness-invalid" as never,
+      airlineName: "Readiness Invalid Air",
+      founderName: "Sam Lee",
+      airlineCode: "RI",
+      starterAirportId: "airport:kalo" as AirportId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+    if (!harness.ok) throw new Error("Harness should succeed");
+
+    const missingAircraftSave = {
+      ...harness.value.finalSave,
+      schedules: harness.value.finalSave.schedules.map((schedule) => ({
+        ...schedule,
+        aircraftInstanceId: "aircraft:missing" as AircraftInstanceId,
+        flights: schedule.flights.map((flight) => ({
+          ...flight,
+          aircraftInstanceId: "aircraft:missing" as AircraftInstanceId
+        }))
+      }))
+    };
+    expect(createOperationsReadinessReport(missingAircraftSave).errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-flight-aircraft-missing" })
+    );
+
+    const unavailableAircraftSave = {
+      ...harness.value.finalSave,
+      aircraft: harness.value.finalSave.aircraft.map((aircraft) => ({
+        ...aircraft,
+        maintenanceStatus: "grounded" as const
+      }))
+    };
+    expect(createOperationsReadinessReport(unavailableAircraftSave).errors).toContainEqual(
+      expect.objectContaining({ code: "readiness-aircraft-unavailable" })
+    );
+
+    const incompatibleAircraftSave = {
+      ...harness.value.finalSave,
+      aircraftTypes: harness.value.finalSave.aircraftTypes.map((aircraftType) =>
+        aircraftType.id === harness.value.starterAircraft.aircraftTypeId
+          ? { ...aircraftType, rangeNm: 1, airportRunwayRequirement: "heavy" as const }
+          : aircraftType
+      )
+    };
+    const incompatibleReport = createOperationsReadinessReport(incompatibleAircraftSave);
+    expect(incompatibleReport.ready).toBe(false);
+    expect(incompatibleReport.errors).toContainEqual(
+      expect.objectContaining({ code: "aircraft-range-too-short" })
+    );
+    expect(incompatibleReport.errors).toContainEqual(
+      expect.objectContaining({ code: "origin-runway-incompatible" })
+    );
+  });
+
+  it("keeps operations readiness reports deterministic and does not mutate the save", () => {
+    const harness = runActOneOpeningCoreLoop({
+      userId: "user:readiness-deterministic" as never,
+      airlineName: "Readiness Deterministic Air",
+      founderName: "Jamie Park",
+      airlineCode: "RD",
+      starterAirportId: "airport:kalo" as AirportId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00"
+    });
+    if (!harness.ok) throw new Error("Harness should succeed");
+
+    const before = structuredClone(harness.value.finalSave);
+    const first = createOperationsReadinessReport(harness.value.finalSave, {
+      generatedAt: "2026-05-11T09:00:00.000-05:00",
+      reportType: "first-operating-period-placeholder"
+    });
+    const second = createOperationsReadinessReport(harness.value.finalSave, {
+      generatedAt: "2026-05-11T09:00:00.000-05:00",
+      reportType: "first-operating-period-placeholder"
+    });
+
+    expect(first).toEqual(second);
+    expect(first.id).toBe(
+      "ops-readiness:readiness-deterministic-air-kalo-first-operating-period-placeholder-2026-05-11t09-00-00-000-05-00"
+    );
+    expect(harness.value.finalSave).toEqual(before);
   });
 });

@@ -103,6 +103,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@airline-career-sim/game-core':
+        specifier: workspace:*
+        version: link:../../packages/game-core
       '@airline-career-sim/shared':
         specifier: workspace:*
         version: link:../../packages/shared

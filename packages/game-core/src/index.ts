@@ -2578,3 +2578,424 @@ export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): Save
 
   return parsedSave;
 };
+
+/**
+ * Options for bootstrapping and exercising the Act 1 opening route/schedule loop.
+ */
+export type ActOneOpeningHarnessOptions = CreateNewAirlineSaveOptions & {
+  firstDestinationAirportId?: AirportId;
+  firstDepartureTimeLocal?: string;
+  turnTimeMinutes?: number;
+  routeAircraftInstanceId?: AircraftInstanceId;
+  playableAirportIds?: readonly AirportId[];
+  excludedAirportIds?: readonly AirportId[];
+};
+
+/**
+ * Compact deterministic summary returned by the Act 1 opening harness.
+ */
+export type ActOneOpeningHarnessSummary = {
+  airlineName: string;
+  homeAirportId: AirportId;
+  destinationAirportId: AirportId;
+  starterAircraftId: AircraftInstanceId;
+  routeId: RouteId;
+  scheduleId: ScheduleId;
+  chooseFirstRouteMet: boolean;
+  buildFirstScheduleMet: boolean;
+  routeCount: number;
+  scheduleCount: number;
+};
+
+/**
+ * Full result payload produced by the Act 1 opening core loop harness.
+ */
+export type ActOneOpeningHarness = {
+  finalSave: SaveGame;
+  createdAirline: SaveGame["airline"];
+  starterAircraft: AircraftInstance;
+  selectedAirports: {
+    home: CuratedAirport;
+    destination: CuratedAirport;
+  };
+  createdRoute: Route;
+  createdSchedule: AircraftSchedule;
+  objectiveChecks: {
+    chooseFirstRoute: ActOneRequirementCheck;
+    buildFirstSchedule: ActOneRequirementCheck;
+  };
+  warnings: string[];
+  summary: ActOneOpeningHarnessSummary;
+};
+
+const defaultActOneHarnessDestinationId = "airport:kmcw" as AirportId;
+const defaultActOneHarnessDepartureTime = "08:00";
+const defaultActOneHarnessTurnMinutes = 30;
+
+/**
+ * Runs the developer-facing Act 1 opening core loop harness.
+ *
+ * @param options - Save bootstrap and first route/schedule configuration.
+ * @returns Structured success with the final save and inspection summary, or clean validation errors.
+ */
+export const runActOneOpeningCoreLoop = (
+  options: ActOneOpeningHarnessOptions
+): GameplayResult<ActOneOpeningHarness> => {
+  let initialSave: SaveGame;
+  try {
+    initialSave = createNewAirlineSave(options);
+  } catch (error) {
+    return fail({
+      code: "harness-save-bootstrap-failed",
+      message: error instanceof Error ? error.message : "New airline save could not be created."
+    });
+  }
+
+  const starterAircraft = initialSave.aircraft[0];
+  if (!starterAircraft) {
+    return fail({
+      code: "harness-starter-aircraft-missing",
+      message: "New airline save did not include a starter aircraft."
+    });
+  }
+
+  const homeAirport = findAirport(initialSave, initialSave.airline.homeAirportId);
+  const destinationAirportId = options.firstDestinationAirportId ?? defaultActOneHarnessDestinationId;
+  const destinationAirport = findAirport(initialSave, destinationAirportId);
+
+  if (!homeAirport || !destinationAirport) {
+    return fail({
+      code: "harness-airport-selection-failed",
+      message: "The harness could not resolve the home and destination airports.",
+      entityId: !homeAirport ? initialSave.airline.homeAirportId : destinationAirportId
+    });
+  }
+
+  const scheduleAircraftInstanceId = options.routeAircraftInstanceId ?? starterAircraft.id;
+  const routePlan = createRoutePlan(initialSave, {
+    originAirportId: homeAirport.id,
+    destinationAirportId: destinationAirport.id,
+    aircraftInstanceId: scheduleAircraftInstanceId,
+    createdAt: initialSave.currentGameTime,
+    playableAirportIds: options.playableAirportIds,
+    excludedAirportIds: options.excludedAirportIds
+  });
+
+  if (!routePlan.ok) {
+    return routePlan;
+  }
+
+  const withRoute = addRouteToSave(initialSave, routePlan.value);
+  if (!withRoute.ok) {
+    return withRoute;
+  }
+
+  const chooseFirstRoute = checkChooseFirstRouteRequirement(withRoute.value);
+  const schedule = createRoundTripSchedule(withRoute.value, {
+    aircraftInstanceId: scheduleAircraftInstanceId,
+    routeId: routePlan.value.id,
+    firstDepartureTimeLocal:
+      options.firstDepartureTimeLocal ?? defaultActOneHarnessDepartureTime,
+    turnTimeMinutes: options.turnTimeMinutes ?? defaultActOneHarnessTurnMinutes
+  });
+
+  if (!schedule.ok) {
+    return schedule;
+  }
+
+  const withSchedule = addScheduleToSave(withRoute.value, schedule.value);
+  if (!withSchedule.ok) {
+    return withSchedule;
+  }
+
+  const buildFirstSchedule = checkBuildFirstScheduleRequirement(withSchedule.value);
+  const relationshipIssues = validateSaveGameRelationships(withSchedule.value);
+  if (relationshipIssues.length > 0) {
+    return fail({
+      code: "harness-final-save-invalid",
+      message: relationshipIssues.map((issue) => `${issue.path}: ${issue.message}`).join("; ")
+    });
+  }
+
+  const parsedFinalSave = saveGameSchema.parse(withSchedule.value);
+  return ok({
+    finalSave: parsedFinalSave,
+    createdAirline: parsedFinalSave.airline,
+    starterAircraft,
+    selectedAirports: {
+      home: homeAirport,
+      destination: destinationAirport
+    },
+    createdRoute: routePlan.value,
+    createdSchedule: schedule.value,
+    objectiveChecks: {
+      chooseFirstRoute,
+      buildFirstSchedule
+    },
+    warnings: [
+      "Developer harness only; no UI, persistence, operations simulation, revenue, or catch-up ran."
+    ],
+    summary: {
+      airlineName: parsedFinalSave.airline.name,
+      homeAirportId: homeAirport.id,
+      destinationAirportId: destinationAirport.id,
+      starterAircraftId: starterAircraft.id,
+      routeId: routePlan.value.id,
+      scheduleId: schedule.value.id,
+      chooseFirstRouteMet: chooseFirstRoute.met,
+      buildFirstScheduleMet: buildFirstSchedule.met,
+      routeCount: parsedFinalSave.routes.length,
+      scheduleCount: parsedFinalSave.schedules.length
+    }
+  });
+};
+
+/**
+ * Supported report categories for pre-operation readiness inspection.
+ */
+export type OperationsReadinessReportType =
+  | "readiness"
+  | "schedule-validation"
+  | "first-operating-period-placeholder";
+
+/**
+ * Data-only readiness report for deciding whether the first operating period can run.
+ */
+export type OperationsReadinessReport = {
+  id: string;
+  reportType: OperationsReadinessReportType;
+  airlineId: AirlineId;
+  generatedAt: string;
+  currentGameTime: string;
+  ready: boolean;
+  routesChecked: RouteId[];
+  schedulesChecked: ScheduleId[];
+  aircraftChecked: AircraftInstanceId[];
+  errors: GameplayValidationError[];
+  warnings: GameplayValidationError[];
+  recommendedNextAction: string;
+};
+
+/**
+ * Optional metadata for generating an operations readiness report.
+ */
+export type OperationsReadinessOptions = {
+  generatedAt?: string;
+  reportType?: OperationsReadinessReportType;
+};
+
+/**
+ * Checks whether the save has at least one route ready for the first operating period.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured requirement status for the first route.
+ */
+export const checkFirstRouteReadiness = (save: SaveGame): ActOneRequirementCheck =>
+  checkChooseFirstRouteRequirement(save);
+
+/**
+ * Checks whether the save has at least one round-trip schedule ready for the first operating period.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured requirement status for the first schedule.
+ */
+export const checkFirstScheduleReadiness = (save: SaveGame): ActOneRequirementCheck =>
+  checkBuildFirstScheduleRequirement(save);
+
+const reportIdTimestamp = (timestamp: string) =>
+  timestamp
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const operationsReportIdFor = (
+  save: SaveGame,
+  reportType: OperationsReadinessReportType,
+  generatedAt: string
+) => `ops-readiness:${save.id.replace(/^save:/, "")}-${reportType}-${reportIdTimestamp(generatedAt)}`;
+
+const unique = <TValue>(values: readonly TValue[]) => [...new Set(values)];
+
+const routeReadinessIssues = (save: SaveGame): GameplayValidationError[] =>
+  save.routes.flatMap((route) => {
+    const errors: GameplayValidationError[] = [];
+    const origin = findAirport(save, route.originAirportId);
+    const destination = findAirport(save, route.destinationAirportId);
+    if (!origin) {
+      errors.push({
+        code: "readiness-route-origin-missing",
+        message: "Route origin airport is missing.",
+        entityId: route.originAirportId
+      });
+    }
+    if (!destination) {
+      errors.push({
+        code: "readiness-route-destination-missing",
+        message: "Route destination airport is missing.",
+        entityId: route.destinationAirportId
+      });
+    }
+    if (route.assignedScheduleIds.length === 0) {
+      errors.push({
+        code: "readiness-route-unscheduled",
+        message: "Route has no assigned schedule yet.",
+        entityId: route.id
+      });
+    }
+    return errors;
+  });
+
+const scheduledAircraftAvailabilityIssues = (save: SaveGame): GameplayValidationError[] =>
+  unique(save.schedules.map((schedule) => schedule.aircraftInstanceId)).flatMap((aircraftId) => {
+    const aircraft = findAircraftInstance(save, aircraftId);
+    if (!aircraft) {
+      return [
+        {
+          code: "readiness-scheduled-aircraft-missing",
+          message: "Scheduled aircraft does not exist.",
+          entityId: aircraftId
+        }
+      ];
+    }
+    return aircraft.maintenanceStatus === "available"
+      ? []
+      : [
+          {
+            code: "readiness-aircraft-unavailable",
+            message: "Scheduled aircraft is not currently available.",
+            entityId: aircraft.id
+          }
+        ];
+  });
+
+const scheduleReadinessIssues = (save: SaveGame): GameplayValidationError[] =>
+  save.schedules.flatMap((schedule) => {
+    const scheduleErrors: GameplayValidationError[] = [];
+    if (schedule.flights.length === 0) {
+      scheduleErrors.push({
+        code: "readiness-schedule-empty",
+        message: "Schedule does not contain any flights.",
+        entityId: schedule.id
+      });
+    }
+
+    for (const flight of schedule.flights) {
+      const route = save.routes.find((candidate) => candidate.id === flight.routeId);
+      const aircraftType = findAircraftTypeForInstance(save, flight.aircraftInstanceId);
+      const origin = findAirport(save, flight.originAirportId);
+      const destination = findAirport(save, flight.destinationAirportId);
+
+      if (!route) {
+        scheduleErrors.push({
+          code: "readiness-flight-route-missing",
+          message: "Scheduled flight route does not exist.",
+          entityId: flight.routeId
+        });
+      }
+      if (!aircraftType) {
+        scheduleErrors.push({
+          code: "readiness-flight-aircraft-missing",
+          message: "Scheduled flight aircraft does not exist.",
+          entityId: flight.aircraftInstanceId
+        });
+      }
+      if (!origin || !destination) {
+        scheduleErrors.push({
+          code: "readiness-flight-airport-missing",
+          message: "Scheduled flight airport does not exist.",
+          entityId: !origin ? flight.originAirportId : flight.destinationAirportId
+        });
+      }
+      if (route && aircraftType && origin && destination) {
+        const suitability = checkAircraftRouteSuitability(
+          aircraftType,
+          route.distanceNm,
+          origin,
+          destination
+        );
+        if (!suitability.ok) {
+          scheduleErrors.push(...suitability.errors);
+        }
+      }
+    }
+
+    return scheduleErrors;
+  });
+
+/**
+ * Produces a deterministic developer-facing operations readiness report.
+ *
+ * @param save - Save state to inspect.
+ * @param options - Optional report metadata.
+ * @returns A data-only readiness report with warnings and errors.
+ */
+export const createOperationsReadinessReport = (
+  save: SaveGame,
+  options: OperationsReadinessOptions = {}
+): OperationsReadinessReport => {
+  const generatedAt = options.generatedAt ?? save.currentGameTime;
+  const reportType = options.reportType ?? "readiness";
+  const routeCheck = checkFirstRouteReadiness(save);
+  const scheduleCheck = checkFirstScheduleReadiness(save);
+  const errors: GameplayValidationError[] = [];
+  const warnings: GameplayValidationError[] = [];
+
+  if (!routeCheck.met) {
+    errors.push({
+      code: "readiness-first-route-missing",
+      message: "Create a valid first route before running the first operating period."
+    });
+  }
+  if (!scheduleCheck.met) {
+    errors.push({
+      code: "readiness-first-schedule-missing",
+      message: "Create a valid round-trip schedule before running the first operating period."
+    });
+  }
+
+  errors.push(...routeReadinessIssues(save));
+  errors.push(...scheduleReadinessIssues(save));
+  errors.push(...scheduledAircraftAvailabilityIssues(save));
+
+  if (save.reports.length === 0) {
+    warnings.push({
+      code: "readiness-placeholder-report-only",
+      message: "No operations reports exist yet; this report is a pre-simulation readiness placeholder."
+    });
+  }
+
+  const ready = errors.length === 0;
+  const routesChecked = save.routes.map((route) => route.id);
+  const schedulesChecked = save.schedules.map((schedule) => schedule.id);
+  const aircraftChecked = unique(save.schedules.map((schedule) => schedule.aircraftInstanceId));
+
+  return {
+    id: operationsReportIdFor(save, reportType, generatedAt),
+    reportType,
+    airlineId: save.airline.id,
+    generatedAt,
+    currentGameTime: save.currentGameTime,
+    ready,
+    routesChecked,
+    schedulesChecked,
+    aircraftChecked,
+    errors,
+    warnings,
+    recommendedNextAction: ready
+      ? "Run the first operating period when simulation controls are available."
+      : errors[0]?.message ?? "Resolve readiness errors before operating the schedule."
+  };
+};
+
+/**
+ * Reports whether the first operating period can be attempted.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured success with a readiness report, or the same report as a clean failure.
+ */
+export const checkOperationsReadiness = (
+  save: SaveGame
+): GameplayResult<OperationsReadinessReport> => {
+  const report = createOperationsReadinessReport(save);
+  return report.ready ? ok(report) : fail(...report.errors);
+};
