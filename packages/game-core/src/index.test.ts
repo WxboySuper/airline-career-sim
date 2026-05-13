@@ -977,7 +977,7 @@ describe("game-core package", () => {
       aircraftInstanceId: save.aircraft[0].id,
       routeId: routePlan.value.id,
       firstDepartureTimeLocal: "08:00",
-      turnTimeMinutes: -10 // Invalid turn time will catch it first, but let's test logic
+      turnTimeMinutes: 1
     });
     expect(roundTripOverlap.ok).toBe(false);
   });
@@ -990,15 +990,15 @@ describe("game-core package", () => {
       aircraftInstanceId: save.aircraft[0].id
     });
 
-    const mockKcin = {
+    const mockKcin: typeof save.airports[0] = {
       ...save.airports[0],
-      id: "airport:kcin",
+      id: "airport:kcin" as AirportId,
       icao: "KCIN",
       name: "Mock Carroll",
       latitude: 42.0456,
       longitude: -94.789,
       runwayClass: "short"
-    } as unknown as CuratedAirport;
+    };
 
     const expandedSave = {
       ...save,
@@ -1020,9 +1020,9 @@ describe("game-core package", () => {
       playableAirportIds: ["airport:kalo", "airport:kmcw", "airport:kcin"] as AirportId[]
     });
 
+    expect(route1Plan.ok).toBe(true);
+    expect(route2Plan.ok).toBe(true);
     if (!route1Plan.ok || !route2Plan.ok) {
-      console.error("Route 1:", route1Plan.ok ? "ok" : route1Plan.errors);
-      console.error("Route 2:", route2Plan.ok ? "ok" : route2Plan.errors);
       throw new Error("Route planning failed");
     }
     let withRoutes = addRouteToSave(expandedSave, route1Plan.value).value;

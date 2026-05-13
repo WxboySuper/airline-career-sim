@@ -580,7 +580,10 @@ const validateRouteConstraints = (
       entityId: input.destinationAirportId
     });
   }
-  if (save.routes.length === 0 && input.originAirportId !== save.airline.homeAirportId) {
+  const existingScheduled = save.routes.filter((route) => route.routeType === "scheduled").length;
+  const isPlanningScheduled = (input.routeType ?? "scheduled") === "scheduled";
+
+  if (isPlanningScheduled && existingScheduled === 0 && input.originAirportId !== save.airline.homeAirportId) {
     errors.push({
       code: "first-route-must-use-home-airport",
       message: "The first scheduled route must originate from the airline home airport."
