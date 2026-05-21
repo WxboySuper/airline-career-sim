@@ -68,7 +68,7 @@ export function createInMemorySaveRepository(): SaveRepository {
     },
     replace(save) {
       if (!saves.has(save.id)) {
-        return Promise.resolve(undefined);
+        return Promise.resolve() as Promise<SaveGame | undefined>;
       }
       const cloned = cloneSave(save);
       saves.set(cloned.id, cloned);
