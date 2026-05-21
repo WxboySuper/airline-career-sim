@@ -98,4 +98,43 @@ describe("server", () => {
     await server.close();
     expect(response.statusCode).toBe(400);
   });
+
+  it("returns 400 when bootstrap receives unknown starter catalog IDs", async () => {
+    const server = createServer(createInMemorySaveRepository());
+    const response = await server.inject({
+      method: "POST",
+      url: "/dev/saves",
+      payload: {
+        userId: "user:server-test",
+        airlineName: "Invalid Starter Air",
+        founderName: "Avery Stone",
+        airlineCode: "INV",
+        starterAirportId: "airport:does-not-exist"
+      }
+    });
+
+    await server.close();
+    expect(response.statusCode).toBe(400);
+    expect((response.json() as { ok: boolean }).ok).toBe(false);
+  });
+
+  it("returns 404 when replacing a save that was never stored", async () => {
+    const save = createNewAirlineSave({
+      userId: "user:server-test",
+      airlineName: "Never Stored Air",
+      founderName: "Avery Stone",
+      airlineCode: "NSA",
+      starterAirportId: "airport:kalo",
+      starterAircraftTypeId: "aircraft-type:aster-a8-courier"
+    });
+    const server = createServer(createInMemorySaveRepository());
+    const response = await server.inject({
+      method: "PUT",
+      url: `/dev/saves/${save.id}`,
+      payload: save
+    });
+
+    await server.close();
+    expect(response.statusCode).toBe(404);
+  });
 });

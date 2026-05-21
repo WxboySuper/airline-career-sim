@@ -5,9 +5,11 @@ import {
   createNewAirlineSave,
   type CreateNewAirlineSaveOptions
 } from "@airline-career-sim/game-core";
-import { productName, saveGameSchema, type HealthResponse } from "@airline-career-sim/shared";
+import { productName, saveGameSchema, saveIdSchema, type HealthResponse } from "@airline-career-sim/shared";
 
 import { createInMemorySaveRepository, type SaveRepository } from "./saveRepository";
+
+const saveIdParamsSchema = z.object({ saveId: saveIdSchema });
 
 const createSaveRequestSchema = z.object({
   userId: z.string().min(1),
@@ -31,6 +33,22 @@ const createSaveRequestSchema = z.object({
   aircraftRegistration: z.string().optional(),
   saveId: z.string().optional()
 });
+
+/**
+ * Maps bootstrap or schema validation failures to a 400 response payload.
+ *
+ * @param error - Error raised while creating or validating a save.
+ * @returns A client-safe error body when the failure is a validation issue.
+ */
+const toSaveCreationErrorBody = (error: unknown) => {
+  if (error instanceof z.ZodError) {
+    return { ok: false as const, errors: error.flatten() };
+  }
+  if (error instanceof Error) {
+    return { ok: false as const, error: error.message };
+  }
+  return { ok: false as const, error: "Save creation failed." };
+};
 
 /**
  * Creates and configures the Fastify server instance.
@@ -58,9 +76,13 @@ export function createServer(repository: SaveRepository = createInMemorySaveRepo
     }
 
     const saveOptions = parsed.data as CreateNewAirlineSaveOptions;
-    const save = saveGameSchema.parse(createNewAirlineSave(saveOptions));
-    const stored = await repository.create(save);
-    return reply.code(201).send({ ok: true, save: stored });
+    try {
+      const save = saveGameSchema.parse(createNewAirlineSave(saveOptions));
+      const stored = await repository.create(save);
+      return reply.code(201).send({ ok: true, save: stored });
+    } catch (error) {
+      return reply.code(400).send(toSaveCreationErrorBody(error));
+    }
   });
 
   server.get("/dev/saves", async () => ({
@@ -69,12 +91,12 @@ export function createServer(repository: SaveRepository = createInMemorySaveRepo
   }));
 
   server.get("/dev/saves/:saveId", async (request, reply) => {
-    const params = z.object({ saveId: z.string().min(1) }).safeParse(request.params);
+    const params = saveIdParamsSchema.safeParse(request.params);
     if (!params.success) {
       return reply.code(400).send({ ok: false, error: "Invalid save ID." });
     }
 
-    const save = await repository.getById(params.data.saveId as never);
+    const save = await repository.getById(params.data.saveId);
     if (!save) {
       return reply.code(404).send({ ok: false, error: "Save not found." });
     }
@@ -83,7 +105,7 @@ export function createServer(repository: SaveRepository = createInMemorySaveRepo
   });
 
   server.put("/dev/saves/:saveId", async (request, reply) => {
-    const params = z.object({ saveId: z.string().min(1) }).safeParse(request.params);
+    const params = saveIdParamsSchema.safeParse(request.params);
     if (!params.success) {
       return reply.code(400).send({ ok: false, error: "Invalid save ID." });
     }
@@ -104,16 +126,20 @@ export function createServer(repository: SaveRepository = createInMemorySaveRepo
     }
 
     const stored = await repository.replace(parsedSave.data);
+    if (!stored) {
+      return reply.code(404).send({ ok: false, error: "Save not found." });
+    }
+
     return { ok: true, save: stored };
   });
 
   server.delete("/dev/saves/:saveId", async (request, reply) => {
-    const params = z.object({ saveId: z.string().min(1) }).safeParse(request.params);
+    const params = saveIdParamsSchema.safeParse(request.params);
     if (!params.success) {
       return reply.code(400).send({ ok: false, error: "Invalid save ID." });
     }
 
-    const removed = await repository.delete(params.data.saveId as never);
+    const removed = await repository.delete(params.data.saveId);
     if (!removed) {
       return reply.code(404).send({ ok: false, error: "Save not found." });
     }

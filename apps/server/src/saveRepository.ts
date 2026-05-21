@@ -27,8 +27,9 @@ export interface SaveRepository {
    * Replaces an existing save.
    *
    * @param save - Updated save payload.
+   * @returns The stored save, or undefined when the save ID does not exist.
    */
-  replace(save: SaveGame): Promise<SaveGame>;
+  replace(save: SaveGame): Promise<SaveGame | undefined>;
 
   /**
    * Deletes a save by ID.
@@ -38,7 +39,13 @@ export interface SaveRepository {
   delete(saveId: SaveId): Promise<boolean>;
 }
 
-const cloneSave = (save: SaveGame) => structuredClone(save);
+/**
+ * Returns a deep clone of a save so callers cannot mutate stored state.
+ *
+ * @param save - Save payload to clone.
+ * @returns A detached copy of the save.
+ */
+const cloneSave = (save: SaveGame): SaveGame => structuredClone(save);
 
 /**
  * Creates a lightweight in-memory save repository for development and tests.
@@ -47,25 +54,28 @@ export function createInMemorySaveRepository(): SaveRepository {
   const saves = new Map<SaveId, SaveGame>();
 
   return {
-    async create(save) {
+    create(save) {
       const cloned = cloneSave(save);
       saves.set(cloned.id, cloned);
-      return cloneSave(cloned);
+      return Promise.resolve(cloneSave(cloned));
     },
-    async getById(saveId) {
+    getById(saveId) {
       const existing = saves.get(saveId);
-      return existing ? cloneSave(existing) : undefined;
+      return Promise.resolve(existing ? cloneSave(existing) : undefined);
     },
-    async list() {
-      return [...saves.values()].map((save) => cloneSave(save));
+    list() {
+      return Promise.resolve([...saves.values()].map((save) => cloneSave(save)));
     },
-    async replace(save) {
+    replace(save) {
+      if (!saves.has(save.id)) {
+        return Promise.resolve(undefined);
+      }
       const cloned = cloneSave(save);
       saves.set(cloned.id, cloned);
-      return cloneSave(cloned);
+      return Promise.resolve(cloneSave(cloned));
     },
-    async delete(saveId) {
-      return saves.delete(saveId);
+    delete(saveId) {
+      return Promise.resolve(saves.delete(saveId));
     }
   };
 }

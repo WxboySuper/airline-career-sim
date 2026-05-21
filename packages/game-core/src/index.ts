@@ -2734,11 +2734,7 @@ export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessChe
       );
       if (!suitability.ok) {
         errors.push(
-          ...suitability.errors.map((error) =>
-            error.message.includes("Aircraft range")
-              ? `Flight ${flight.id}: ${error.message}`
-              : `Flight ${flight.id}: ${error.message}`
-          )
+          ...suitability.errors.map((error) => `Flight ${flight.id}: ${error.message}`)
         );
       }
     }
