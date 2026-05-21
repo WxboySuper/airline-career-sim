@@ -584,7 +584,11 @@ const validateRouteConstraints = (
   const existingScheduled = save.routes.filter((route) => route.routeType === "scheduled").length;
   const isPlanningScheduled = (input.routeType ?? "scheduled") === "scheduled";
 
-  if (isPlanningScheduled && existingScheduled === 0 && input.originAirportId !== save.airline.homeAirportId) {
+  if (
+    isPlanningScheduled &&
+    existingScheduled === 0 &&
+    input.originAirportId !== save.airline.homeAirportId
+  ) {
     errors.push({
       code: "first-route-must-use-home-airport",
       message: "The first scheduled route must originate from the airline home airport."
@@ -2690,7 +2694,9 @@ export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessChe
     }
 
     if (aircraft.assignedScheduleId !== currentSchedule.id) {
-      warnings.push(`Scheduled aircraft ${aircraft.id} is not linked back to schedule ${currentSchedule.id}.`);
+      warnings.push(
+        `Scheduled aircraft ${aircraft.id} is not linked back to schedule ${currentSchedule.id}.`
+      );
     }
 
     if (currentSchedule.flights.length < 2) {
@@ -2712,7 +2718,9 @@ export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessChe
       }
 
       const origin = save.airports.find((airport) => airport.id === flight.originAirportId);
-      const destination = save.airports.find((airport) => airport.id === flight.destinationAirportId);
+      const destination = save.airports.find(
+        (airport) => airport.id === flight.destinationAirportId
+      );
       if (!origin || !destination) {
         errors.push(`Flight ${flight.id} must reference existing airports.`);
         continue;
@@ -2743,7 +2751,10 @@ export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessChe
     routeIdsChecked,
     scheduleIdsChecked,
     aircraftIdsChecked,
-    recommendedNextAction: errors.length > 0 ? "Complete the missing first route and schedule." : "Run the first operating period."
+    recommendedNextAction:
+      errors.length > 0
+        ? "Complete the missing first route and schedule."
+        : "Run the first operating period."
   };
 };
 

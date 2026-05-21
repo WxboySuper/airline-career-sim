@@ -951,7 +951,10 @@ describe("game-core package", () => {
     if (!withSchedule.ok) throw new Error("Schedule add failed");
 
     const readiness = checkOperationsReadiness(withSchedule.value);
-    const report = createOperationsReadinessReport(withSchedule.value, withSchedule.value.currentGameTime);
+    const report = createOperationsReadinessReport(
+      withSchedule.value,
+      withSchedule.value.currentGameTime
+    );
 
     expect(readiness.ready).toBe(true);
     expect(report.reportType).toBe("readiness-report");
@@ -1076,7 +1079,7 @@ describe("game-core package", () => {
       aircraftInstanceId: save.aircraft[0].id
     });
 
-    const mockKcin: typeof save.airports[0] = {
+    const mockKcin: (typeof save.airports)[0] = {
       ...save.airports[0],
       id: "airport:kcin" as AirportId,
       icao: "KCIN",
