@@ -5,7 +5,12 @@ import {
   createNewAirlineSave,
   type CreateNewAirlineSaveOptions
 } from "@airline-career-sim/game-core";
-import { productName, saveGameSchema, saveIdSchema, type HealthResponse } from "@airline-career-sim/shared";
+import {
+  productName,
+  saveGameSchema,
+  saveIdSchema,
+  type HealthResponse
+} from "@airline-career-sim/shared";
 
 import { createInMemorySaveRepository, type SaveRepository } from "./saveRepository";
 

@@ -2733,9 +2733,7 @@ export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessChe
         destination
       );
       if (!suitability.ok) {
-        errors.push(
-          ...suitability.errors.map((error) => `Flight ${flight.id}: ${error.message}`)
-        );
+        errors.push(...suitability.errors.map((error) => `Flight ${flight.id}: ${error.message}`));
       }
     }
   }
