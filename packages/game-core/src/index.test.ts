@@ -24,11 +24,13 @@ import {
   canAddRouteForCurrentAct,
   checkBuildFirstScheduleRequirement,
   checkChooseFirstRouteRequirement,
+  checkOperationsReadiness,
   checkAircraftRouteSuitability,
   compareAircraftInSameCategory,
   createAircraftInstanceFromAcquisition,
   createLeasedAircraftInstance,
   createNewAirlineSave,
+  createOperationsReadinessReport,
   createRoundTripSchedule,
   createRoutePlan,
   createStartingAircraftInstance,
@@ -41,6 +43,7 @@ import {
   listAircraftByCategory,
   listAircraftByManufacturer,
   listStarterAircraft,
+  runActOneOpeningCoreLoop,
   simulationModuleStatus,
   validateScheduledFlight,
   validateSaveGameRelationships
@@ -927,6 +930,92 @@ describe("game-core package", () => {
     expect(checkBuildFirstScheduleRequirement(withSchedule.value).met).toBe(true);
   });
 
+  it("creates a placeholder operations readiness report", () => {
+    const save = buildStarterSave();
+    const routePlan = createRoutePlan(save, {
+      originAirportId: "airport:kalo" as AirportId,
+      destinationAirportId: "airport:kmcw" as AirportId,
+      aircraftInstanceId: save.aircraft[0].id
+    });
+    if (!routePlan.ok) throw new Error("Route planning failed");
+    const withRoute = addRouteToSave(save, routePlan.value);
+    if (!withRoute.ok) throw new Error("Route add failed");
+    const roundTrip = createRoundTripSchedule(withRoute.value, {
+      aircraftInstanceId: save.aircraft[0].id,
+      routeId: routePlan.value.id,
+      firstDepartureTimeLocal: "08:00",
+      turnTimeMinutes: 30
+    });
+    if (!roundTrip.ok) throw new Error("Round trip schedule failed");
+    const withSchedule = addScheduleToSave(withRoute.value, roundTrip.value);
+    if (!withSchedule.ok) throw new Error("Schedule add failed");
+
+    const readiness = checkOperationsReadiness(withSchedule.value);
+    const report = createOperationsReadinessReport(
+      withSchedule.value,
+      withSchedule.value.currentGameTime
+    );
+
+    expect(readiness.ready).toBe(true);
+    expect(report.reportType).toBe("readiness-report");
+    expect(report.ready).toBe(true);
+    expect(report.routesChecked).toContain(routePlan.value.id);
+    expect(report.schedulesChecked).toContain(roundTrip.value.id);
+  });
+
+  it("runs the Act 1 opening core loop end-to-end with deterministic output", () => {
+    const options = {
+      userId: "user:opening-harness" as never,
+      airlineName: "Harness Air",
+      founderName: "Jordan Lee",
+      airlineCode: "HAR",
+      starterAirportId: "airport:kalo" as AirportId,
+      starterAircraftTypeId: "aircraft-type:aster-a8-courier" as AircraftTypeId,
+      createdAt: "2026-05-11T08:00:00.000-05:00",
+      currentGameTime: "2026-05-11T08:00:00.000-05:00",
+      destinationAirportId: "airport:kmcw" as AirportId,
+      firstDepartureTimeLocal: "08:00",
+      turnTimeMinutes: 30
+    };
+
+    const first = runActOneOpeningCoreLoop(options);
+    const second = runActOneOpeningCoreLoop(options);
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) throw new Error("Opening core loop failed");
+
+    expect(validateSaveGameRelationships(first.value.finalSave)).toEqual([]);
+    expect(first.value.objectiveCheckResults.chooseFirstRoute.met).toBe(true);
+    expect(first.value.objectiveCheckResults.buildFirstSchedule.met).toBe(true);
+    expect(first.value.summary.chooseFirstRouteMet).toBe(true);
+    expect(first.value.summary.buildFirstScheduleMet).toBe(true);
+    expect(first.value.finalSave.routes).toHaveLength(1);
+    expect(first.value.finalSave.schedules).toHaveLength(1);
+    expect(first.value.createdRoute.id).toBe(first.value.summary.routeId);
+    expect(first.value.createdSchedule.id).toBe(first.value.summary.scheduleId);
+    expect(first.value.finalSave.id).toBe(second.value.finalSave.id);
+    expect(first.value.createdRoute.id).toBe(second.value.createdRoute.id);
+    expect(first.value.createdSchedule.id).toBe(second.value.createdSchedule.id);
+  });
+
+  it("fails the opening core loop cleanly for invalid route choices", () => {
+    const result = runActOneOpeningCoreLoop({
+      userId: "user:opening-harness-invalid" as never,
+      airlineName: "Harness Invalid Air",
+      founderName: "Jordan Lee",
+      airlineCode: "HIA",
+      starterAirportId: "airport:kalo" as AirportId,
+      destinationAirportId: "airport:kalo" as AirportId
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("Expected invalid opening loop to fail");
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({ code: "route-airports-identical" })
+    );
+  });
+
   it("enforces Act 1 route limits and hub-style restrictions", () => {
     const save = buildStarterSave();
     const route1 = createRoutePlan(save, {
@@ -990,7 +1079,7 @@ describe("game-core package", () => {
       aircraftInstanceId: save.aircraft[0].id
     });
 
-    const mockKcin: typeof save.airports[0] = {
+    const mockKcin: (typeof save.airports)[0] = {
       ...save.airports[0],
       id: "airport:kcin" as AirportId,
       icao: "KCIN",

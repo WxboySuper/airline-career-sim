@@ -8,7 +8,10 @@
     "types": ["node", "vitest/globals"],
     "noEmit": false
   },
-  "references": [{ "path": "../../packages/shared" }],
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/game-core" }
+  ],
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"]
 }

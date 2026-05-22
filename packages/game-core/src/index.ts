@@ -24,6 +24,7 @@ import type {
   ObjectiveProgressId,
   Route,
   RouteId,
+  ReportId,
   SaveId,
   ScheduleId,
   ScheduledFlight,
@@ -583,7 +584,11 @@ const validateRouteConstraints = (
   const existingScheduled = save.routes.filter((route) => route.routeType === "scheduled").length;
   const isPlanningScheduled = (input.routeType ?? "scheduled") === "scheduled";
 
-  if (isPlanningScheduled && existingScheduled === 0 && input.originAirportId !== save.airline.homeAirportId) {
+  if (
+    isPlanningScheduled &&
+    existingScheduled === 0 &&
+    input.originAirportId !== save.airline.homeAirportId
+  ) {
     errors.push({
       code: "first-route-must-use-home-airport",
       message: "The first scheduled route must originate from the airline home airport."
@@ -2577,4 +2582,327 @@ export const createNewAirlineSave = (options: CreateNewAirlineSaveOptions): Save
   }
 
   return parsedSave;
+};
+
+export type ActOneOpeningCoreLoopOptions = CreateNewAirlineSaveOptions & {
+  destinationAirportId?: AirportId;
+  firstDepartureTimeLocal?: string;
+  turnTimeMinutes?: number;
+};
+
+export type ActOneOpeningCoreLoopSummary = {
+  airlineName: string;
+  homeAirportId: AirportId;
+  destinationAirportId: AirportId;
+  aircraftInstanceId: AircraftInstanceId;
+  aircraftTypeId: AircraftTypeId;
+  routeId: RouteId;
+  scheduleId: ScheduleId;
+  chooseFirstRouteMet: boolean;
+  buildFirstScheduleMet: boolean;
+};
+
+export type ActOneOpeningCoreLoopReport = {
+  finalSave: SaveGame;
+  createdAirline: AirlineIdentity;
+  starterAircraft: AircraftInstance;
+  selectedAirports: {
+    home: CuratedAirport;
+    destination: CuratedAirport;
+  };
+  createdRoute: Route;
+  createdSchedule: AircraftSchedule;
+  objectiveCheckResults: {
+    chooseFirstRoute: ActOneRequirementCheck;
+    buildFirstSchedule: ActOneRequirementCheck;
+  };
+  warnings: string[];
+  summary: ActOneOpeningCoreLoopSummary;
+};
+
+/**
+ * Describes the outcome of checking whether the airline is ready to run its first operating period.
+ */
+export type OperationsReadinessCheck = {
+  ready: boolean;
+  errors: string[];
+  warnings: string[];
+  routeIdsChecked: RouteId[];
+  scheduleIdsChecked: ScheduleId[];
+  aircraftIdsChecked: AircraftInstanceId[];
+  recommendedNextAction: string;
+};
+
+/**
+ * Describes the placeholder operations report used for developer-facing readiness inspection.
+ */
+export type OperationsReadinessReport = {
+  id: ReportId;
+  reportType: "readiness-report";
+  airlineId: AirlineId;
+  generatedAt: string;
+  currentGameTime: string;
+  routesChecked: RouteId[];
+  schedulesChecked: ScheduleId[];
+  aircraftChecked: AircraftInstanceId[];
+  errors: string[];
+  warnings: string[];
+  recommendedNextAction: string;
+  ready: boolean;
+};
+
+const DEFAULT_OPENING_DESTINATION_AIRPORT_ID = "airport:kmcw" as AirportId;
+const DEFAULT_OPENING_DEPARTURE_TIME = "08:00";
+const DEFAULT_OPENING_TURN_TIME_MINUTES = 35;
+
+/**
+ * Checks whether the airline is ready to run its first operating period.
+ *
+ * @param save - Save state to inspect.
+ * @returns Structured readiness status for the current airline.
+ */
+export const checkOperationsReadiness = (save: SaveGame): OperationsReadinessCheck => {
+  const routeIdsChecked = getAirlineRoutes(save).map((route) => route.id);
+  const scheduleIdsChecked = save.schedules.map((schedule) => schedule.id);
+  const aircraftIdsChecked = save.aircraft.map((aircraft) => aircraft.id);
+  const warnings: string[] = [];
+  const errors: string[] = [];
+
+  const routeReadiness = checkChooseFirstRouteRequirement(save);
+  const scheduleReadiness = checkBuildFirstScheduleRequirement(save);
+
+  if (!routeReadiness.met) {
+    errors.push(...routeReadiness.missingRequirements);
+  }
+  if (!scheduleReadiness.met) {
+    errors.push(...scheduleReadiness.missingRequirements);
+  }
+
+  const schedule = save.schedules[0];
+  if (routeIdsChecked.length === 0) {
+    warnings.push("No route exists yet for the opening operating period.");
+  }
+  if (!schedule) {
+    warnings.push("No schedule exists yet for the opening operating period.");
+  }
+
+  for (const currentSchedule of save.schedules) {
+    const aircraft = save.aircraft.find((item) => item.id === currentSchedule.aircraftInstanceId);
+    if (!aircraft) {
+      errors.push(`Scheduled aircraft must exist for schedule ${currentSchedule.id}.`);
+      continue;
+    }
+
+    if (aircraft.assignedScheduleId !== currentSchedule.id) {
+      warnings.push(
+        `Scheduled aircraft ${aircraft.id} is not linked back to schedule ${currentSchedule.id}.`
+      );
+    }
+
+    if (currentSchedule.flights.length < 2) {
+      errors.push(`Schedule ${currentSchedule.id} should include a round trip.`);
+      continue;
+    }
+
+    for (const flight of currentSchedule.flights) {
+      const flightRoute = save.routes.find((candidate) => candidate.id === flight.routeId);
+      if (!flightRoute) {
+        errors.push(`Flight ${flight.id} must reference an existing route.`);
+        continue;
+      }
+
+      const aircraftType = findAircraftTypeForInstance(save, aircraft.id);
+      if (!aircraftType) {
+        errors.push(`Aircraft type must exist for schedule ${currentSchedule.id}.`);
+        continue;
+      }
+
+      const origin = save.airports.find((airport) => airport.id === flight.originAirportId);
+      const destination = save.airports.find(
+        (airport) => airport.id === flight.destinationAirportId
+      );
+      if (!origin || !destination) {
+        errors.push(`Flight ${flight.id} must reference existing airports.`);
+        continue;
+      }
+
+      const suitability = checkAircraftRouteSuitability(
+        aircraftType,
+        flightRoute.distanceNm,
+        origin,
+        destination
+      );
+      if (!suitability.ok) {
+        errors.push(...suitability.errors.map((error) => `Flight ${flight.id}: ${error.message}`));
+      }
+    }
+  }
+
+  return {
+    ready: errors.length === 0,
+    errors,
+    warnings,
+    routeIdsChecked,
+    scheduleIdsChecked,
+    aircraftIdsChecked,
+    recommendedNextAction:
+      errors.length > 0
+        ? "Complete the missing first route and schedule."
+        : "Run the first operating period."
+  };
+};
+
+/**
+ * Creates a placeholder developer-facing operations readiness report.
+ *
+ * @param save - Save state to inspect.
+ * @param generatedAt - Timestamp when the report was created.
+ * @returns A report object suitable for developer inspection.
+ */
+export const createOperationsReadinessReport = (
+  save: SaveGame,
+  generatedAt: string = save.currentGameTime
+): OperationsReadinessReport => {
+  const readiness = checkOperationsReadiness(save);
+  return {
+    id: `report:${save.id.replace(/^save:/, "")}-readiness-${generatedAt
+      .replace(/[:.]/g, "-")
+      .replace(/T/, "-")
+      .replace(/Z$/, "")}` as ReportId,
+    reportType: "readiness-report",
+    airlineId: save.airline.id as AirlineId,
+    generatedAt,
+    currentGameTime: save.currentGameTime,
+    routesChecked: readiness.routeIdsChecked,
+    schedulesChecked: readiness.scheduleIdsChecked,
+    aircraftChecked: readiness.aircraftIdsChecked,
+    errors: readiness.errors,
+    warnings: readiness.warnings,
+    recommendedNextAction: readiness.recommendedNextAction,
+    ready: readiness.ready
+  };
+};
+
+/**
+ * Runs the deterministic developer-facing Act 1 opening loop from save creation through
+ * first route, first round trip, and early objective checks.
+ *
+ * @param options - New-save bootstrap options plus optional route and schedule choices.
+ * @returns Structured success with the completed opening-loop report or validation errors.
+ */
+export const runActOneOpeningCoreLoop = (
+  options: ActOneOpeningCoreLoopOptions
+): GameplayResult<ActOneOpeningCoreLoopReport> => {
+  let save: SaveGame;
+  try {
+    save = createNewAirlineSave(options);
+  } catch (error) {
+    return fail({
+      code: "opening-save-bootstrap-failed",
+      message: error instanceof Error ? error.message : "Opening save bootstrap failed."
+    });
+  }
+
+  const starterAircraft = save.aircraft[0];
+  if (!starterAircraft) {
+    return fail({
+      code: "opening-starter-aircraft-missing",
+      message: "Opening loop requires one starter aircraft in the new save."
+    });
+  }
+
+  const destinationAirportId =
+    options.destinationAirportId ?? DEFAULT_OPENING_DESTINATION_AIRPORT_ID;
+  const routePlan = createRoutePlan(save, {
+    originAirportId: save.airline.homeAirportId,
+    destinationAirportId,
+    aircraftInstanceId: starterAircraft.id
+  });
+  if (!routePlan.ok) {
+    return routePlan;
+  }
+
+  const saveWithRoute = addRouteToSave(save, routePlan.value);
+  if (!saveWithRoute.ok) {
+    return saveWithRoute;
+  }
+
+  const roundTrip = createRoundTripSchedule(saveWithRoute.value, {
+    aircraftInstanceId: starterAircraft.id,
+    routeId: routePlan.value.id,
+    firstDepartureTimeLocal: options.firstDepartureTimeLocal ?? DEFAULT_OPENING_DEPARTURE_TIME,
+    turnTimeMinutes: options.turnTimeMinutes ?? DEFAULT_OPENING_TURN_TIME_MINUTES
+  });
+  if (!roundTrip.ok) {
+    return roundTrip;
+  }
+
+  const finalSaveResult = addScheduleToSave(saveWithRoute.value, roundTrip.value);
+  if (!finalSaveResult.ok) {
+    return finalSaveResult;
+  }
+
+  const parsedFinalSave = saveGameSchema.parse(finalSaveResult.value);
+  const relationshipIssues = validateSaveGameRelationships(parsedFinalSave);
+  if (relationshipIssues.length > 0) {
+    return fail({
+      code: "opening-save-relationship-validation-failed",
+      message: relationshipIssues.map((issue) => `${issue.path}: ${issue.message}`).join("; ")
+    });
+  }
+
+  const homeAirport = parsedFinalSave.airports.find(
+    (airport) => airport.id === parsedFinalSave.airline.homeAirportId
+  );
+  const destinationAirport = parsedFinalSave.airports.find(
+    (airport) => airport.id === destinationAirportId
+  );
+  if (!homeAirport || !destinationAirport) {
+    return fail({
+      code: "opening-airport-selection-missing",
+      message: "Opening loop could not resolve the selected starter airports."
+    });
+  }
+
+  const chooseFirstRoute = checkChooseFirstRouteRequirement(parsedFinalSave);
+  const buildFirstSchedule = checkBuildFirstScheduleRequirement(parsedFinalSave);
+  const starterAircraftType = findAircraftById(
+    parsedFinalSave.aircraftTypes,
+    starterAircraft.aircraftTypeId
+  );
+  if (!starterAircraftType) {
+    return fail({
+      code: "opening-starter-aircraft-type-missing",
+      message: "Opening loop could not resolve the starter aircraft type.",
+      entityId: starterAircraft.aircraftTypeId
+    });
+  }
+
+  return ok({
+    finalSave: parsedFinalSave,
+    createdAirline: parsedFinalSave.airline,
+    starterAircraft,
+    selectedAirports: {
+      home: homeAirport,
+      destination: destinationAirport
+    },
+    createdRoute: routePlan.value,
+    createdSchedule: roundTrip.value,
+    objectiveCheckResults: {
+      chooseFirstRoute,
+      buildFirstSchedule
+    },
+    warnings: [],
+    summary: {
+      airlineName: parsedFinalSave.airline.name,
+      homeAirportId: parsedFinalSave.airline.homeAirportId,
+      destinationAirportId,
+      aircraftInstanceId: starterAircraft.id,
+      aircraftTypeId: starterAircraftType.id,
+      routeId: routePlan.value.id,
+      scheduleId: roundTrip.value.id,
+      chooseFirstRouteMet: chooseFirstRoute.met,
+      buildFirstScheduleMet: buildFirstSchedule.met
+    }
+  });
 };
